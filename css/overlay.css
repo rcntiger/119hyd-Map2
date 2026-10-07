@@ -1,0 +1,33 @@
+/* 119hyd-Map2 · css/overlay.css — 화면 위에 뜨는 것: 사진 뷰어 · 진단 패널 · 진행 막대 · 사진 바텀시트 (+ 로드뷰 버튼) */
+:root{--appver-overlay:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+.iw-rv-btn{width:100%;padding:6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;background:#f8fafc;color:#334155;margin-bottom:4px}
+
+/* 전체화면 사진 뷰어 */
+.photo-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;align-items:center;justify-content:center;flex-direction:column}
+.photo-viewer.open{display:flex}
+.photo-viewer img{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:8px}
+.photo-viewer-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer;opacity:.7}
+.photo-viewer-close:hover{opacity:1}
+.photo-viewer-caption{color:#94a3b8;font-size:13px;margin-top:10px}
+
+/* 다이얼로그 */
+#diagPanel{display:none;position:absolute;inset:0;background:rgba(13,17,23,.95);align-items:center;justify-content:center;flex-direction:column;padding:24px;z-index:9999}
+.diag-box{background:var(--sur);border:1px solid rgba(255,123,114,.3);border-radius:14px;padding:24px 28px;max-width:440px;width:100%}
+
+/* pgWrap */
+.pgwrap{height:3px;background:var(--sur2);border-radius:2px;overflow:hidden;margin-top:8px;display:none}
+.pgfill{height:100%;background:var(--ac);border-radius:2px;transition:width .1s;width:0}
+.pglabel{font-size:10px;color:var(--mt);margin-top:3px;text-align:center;display:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 사진 바텀시트 */
+.photo-sheet-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;align-items:flex-end;justify-content:center}
+.photo-sheet-bg.open{display:flex}
+.photo-sheet{background:#1c2128;border-radius:16px 16px 0 0;padding:20px 20px 36px;width:100%;max-width:480px;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.photo-sheet-title{font-size:13px;font-weight:700;color:var(--mt);text-align:center;margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em}
+.photo-sheet-btn{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:1px solid var(--bd2);border-radius:10px;background:var(--sur2);color:var(--tx);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px;transition:all .15s}
+.photo-sheet-btn:hover{background:var(--sur3);border-color:var(--ac)}
+.photo-sheet-btn .ps-icon{font-size:22px;width:30px;text-align:center}
+.photo-sheet-cancel{width:100%;padding:12px;border:none;border-radius:10px;background:var(--sur3);color:var(--mt);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px}
+.photo-sheet-cancel:hover{color:var(--tx)}

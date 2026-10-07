@@ -1,0 +1,23 @@
+/* 119hyd-Map2 · css/common.css — 초기화 · 버튼 · 입력 · 배지 · 토스트 · 관리자 전용/PC 전용 표시 */
+:root{--appver-common:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+
+/* ── 공통 ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--ac);color:#fff}.btn-primary:hover{filter:brightness(1.15)}
+.btn-danger{background:rgba(255,123,114,.12);color:var(--hi);border:1px solid rgba(255,123,114,.25)}.btn-danger:hover{background:rgba(255,123,114,.2)}
+.btn-ghost{background:var(--sur2);color:var(--mt);border:1px solid var(--bd2)}.btn-ghost:hover{background:var(--sur3);color:var(--tx)}
+input,textarea,select{background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-family:inherit;font-size:13px;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--ac)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--sur);border:1px solid var(--bd2);border-radius:var(--r);padding:10px 16px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:20001;transform:translateY(60px);opacity:0;transition:all .25s;max-width:300px;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:var(--lo)}.toast.err{border-color:var(--hi)}
+
+/* 관리자 전용: 로그인한 관리자에게만 보임 (실제 권한은 Supabase RLS가 막고, 화면은 버튼만 정리) */
+body:not(.is-admin) .admin-only,body:not(.is-admin) .project-card-updown,body:not(.is-admin) .project-card-del,
+body:not(.is-admin) .project-card-edit,body:not(.is-admin) .subplan-btn{display:none!important}
+#adminBadge{margin-left:auto;display:flex;align-items:center;gap:6px}
+@media (max-width:768px),(pointer:coarse){.pc-only{display:none!important}}

@@ -1,0 +1,17 @@
+/* 119hyd-Map2 · css/modal.css — 모달 · 폼 */
+:root{--appver-modal:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+/* ═══ Modal ═══ */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:20000;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+
+.modal{background:var(--sur);border:1px solid var(--bd2);border-radius:var(--r2);padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;margin-bottom:16px}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;color:var(--mt);font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-row input,.form-row textarea,.form-row select{width:100%;padding:8px 10px}
+.form-row textarea{resize:vertical;min-height:60px}
+/* 폼 안의 체크박스/라디오: 공통 input 규칙(width:100%, 대문자 라벨)이 적용되어 글자가 찌그러지던 문제 보정 */
+.form-row input[type=checkbox],.form-row input[type=radio]{width:16px;height:16px;padding:0;margin:0;flex:none;accent-color:var(--ac);cursor:pointer}
+#printModal .form-row label:has(input[type=checkbox]),#printModal .form-row label:has(input[type=radio]){display:flex!important;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--tx);text-transform:none;letter-spacing:0;text-align:left;line-height:1.35}
+#printModal .form-row label:has(input) span{text-transform:none;letter-spacing:0}

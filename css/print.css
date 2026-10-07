@@ -1,0 +1,31 @@
+/* 119hyd-Map2 · css/print.css — 지도 인쇄 모드 · 인쇄 미리보기 조작 바 */
+:root{--appver-print:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+/* ── 지도 인쇄 모드 ──
+   화면 자체를 "종이 한 장" 크기(A4 가로 인쇄면 283×194mm)로 고정한다.
+   → 화면에서 본 모습 = 인쇄 결과가 되어, 인쇄 시 레이아웃이 다시 계산되며 지도 중심이 틀어지는 일이 없다.
+   (모바일 반응형 규칙보다 우선하도록 !important 사용) */
+#printMapTitle,#printBar{display:none}
+
+html.printing-map,html.printing-map body{background:#525659!important;overflow:auto!important}
+html.printing-map #mapHeader,html.printing-map .sidebar,html.printing-map .map-toolbar,html.printing-map .map-toolbar-top,html.printing-map .map-search,html.printing-map #mapSearchResults,html.printing-map .dist-info,html.printing-map #toast,html.printing-map .mob-toggle{display:none!important}
+html.printing-map #mapView{display:block!important;height:auto!important}
+html.printing-map .layout{display:block!important;height:auto!important;overflow:visible!important}
+html.printing-map .map-wrap{display:block!important;position:relative!important;flex:none!important;width:var(--print-w,283mm)!important;height:var(--print-h,194mm)!important;min-height:0!important;margin:0 auto 90px!important;background:#fff}
+html.printing-map #printMapTitle{display:block;position:absolute;top:0;left:0;right:0;height:52px;box-sizing:border-box;overflow:hidden;z-index:50;background:#fff;color:#111;padding:6px 12px;font-size:13px;font-weight:700;border-bottom:1px solid #ccc}
+html.printing-map #printMapTitle .lg{display:inline-flex;align-items:center;gap:4px;margin:3px 10px 0 0;font-size:11px;font-weight:600}
+html.printing-map #printMapTitle .lg i{display:inline-block;width:10px;height:10px;border-radius:50%}
+html.printing-map #map{position:absolute!important;top:52px!important;left:0!important;right:0!important;bottom:0!important;width:auto!important;height:auto!important;min-height:0!important}
+/* 인쇄 미리보기 조작 바 (종이에는 안 나옴) */
+html.printing-map #printBar{display:flex;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99999;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;background:#111827;color:#fff;padding:8px 10px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.45);font-size:12.5px;max-width:96vw}
+#printBar button{padding:7px 12px;border-radius:7px;border:1px solid #374151;background:#1f2937;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer}
+#printBar button.pri{background:#2563eb;border-color:#2563eb}
+#printBar button:disabled{opacity:.4;cursor:default}
+@media print{
+  html.printing-map,html.printing-map body{background:#fff!important;margin:0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html.printing-map #printBar{display:none!important}
+  /* 빈 두 번째 장 방지: 화면 미리보기용 아래 여백(조작 바 자리)을 없애고, 지도 외 요소가 공간을 차지하지 않게 */
+  html.printing-map,html.printing-map body{height:auto!important;overflow:hidden!important}
+  html.printing-map body>*:not(#mapView){display:none!important}
+  html.printing-map .map-wrap{margin:0!important;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid}
+}

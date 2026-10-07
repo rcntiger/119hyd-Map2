@@ -1,0 +1,89 @@
+/* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
+:root{--appver-marker:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+/* 마커 */
+
+/* ═══ Marker ═══ */
+.kk-marker{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.6);cursor:pointer;transition:all .2s;background:#ef4444;display:flex;align-items:center;justify-content:center}
+.kk-marker:hover{transform:scale(1.8)}
+/* 마커 툴팁 */
+.mk-tooltip{position:fixed;background:rgba(15,23,42,.92);color:#f1f5f9;font-size:15px;font-weight:600;padding:8px 16px;border-radius:10px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9999;opacity:0;transition:opacity .15s;transform:translateX(-50%)}
+.mk-tooltip::after{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-bottom-color:rgba(15,23,42,.92)}
+.kk-marker.done{background:#22c55e!important;width:14px!important;height:14px!important;box-shadow:0 2px 8px rgba(34,197,94,.6)!important}
+.kk-marker.active-mk{width:28px!important;height:28px!important;border:3px solid #fff!important;box-shadow:0 0 0 3px rgba(255,255,255,.5),0 3px 10px rgba(0,0,0,.7)!important}
+.kk-marker.g1{background:#3b82f6}.kk-marker.g2{background:#ef4444}.kk-marker.g3{background:#a78bfa}.kk-marker.g4{background:#06b6d4}.kk-marker.g5{background:#10b981}.kk-marker.g6{background:#ec4899}.kk-marker.g0{background:#7d8590}
+
+/* 팝업 */
+
+/* ═══ InfoWindow ═══ */
+.iw-wrap{background:#fff;border-radius:10px;padding:12px 14px;min-width:260px;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.25);font-family:sans-serif;max-height:60vh;overflow-y:auto;position:relative;z-index:10001}
+.iw-photo-add-top{display:block}
+.iw-photo-add-bottom{display:none!important}
+@media(max-width:600px){
+  .iw-photo-add-top{display:block}
+  .iw-photo-add-bottom{display:none!important}
+  .hy-section{margin-bottom:7px}
+  .hy-tbtn{padding:6px 5px;font-size:10px}
+  .hy-status-badge{margin:1px 0 6px}
+  .hy-label{margin-bottom:3px}
+}
+.iw-done-top{display:block;padding:3px 9px;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:#f1f5f9;color:#64748b;transition:all .15s}
+.iw-done-top.is-done{background:#22c55e;color:#fff}
+.iw-done-bottom,.iw-done-bottom-divider{display:none!important}
+.iw-wrap::-webkit-scrollbar{width:3px}
+.iw-wrap::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
+.iw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.iw-team-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px}
+.iw-team-badge.done{background:rgba(34,197,94,.15)!important;color:#22c55e!important}
+.iw-close{cursor:pointer;color:#94a3b8;font-size:18px;line-height:1;padding:2px 4px}
+.iw-name{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px}
+/* 이름 줄: 왼쪽 이름, 오른쪽 끝에 이력·기준 인쇄·로드뷰 버튼 → 주소 줄은 전체 폭 사용 */
+.iw-name-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.iw-name-row .iw-name{margin:0;flex-shrink:0}
+.iw-name-btns{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.iw-addr-full{white-space:normal;overflow:visible;text-overflow:clip;word-break:keep-all;line-height:1.4}
+.iw-addr-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.iw-addr{font-size:12px;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.iw-rv-inline{flex-shrink:0;padding:2px 7px;border:1px solid #e2e8f0;border-radius:5px;background:#f8fafc;color:#475569;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+.hy-fixloc-btn{flex:1;padding:6px 4px;border:1px dashed #93c5fd;border-radius:7px;background:#eff6ff;color:#2563eb;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.hy-fixloc-full{width:100%;display:block;margin-bottom:8px;font-size:11px;white-space:normal}
+.hy-fixloc-row{display:flex;gap:6px;margin-bottom:8px}
+.hy-fixloc-row .hy-fixloc-btn{font-size:11px;padding:7px 4px}
+.hy-rv-btn{flex:0 0 34%;border-style:solid;border-color:#e2e8f0;background:#f8fafc;color:#475569}
+.hy-fixloc-mini{min-width:200px;text-align:center}
+.hy-fixloc-mini-title{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px}
+.hy-fixloc-mini-hint{font-size:11px;color:#64748b;margin-bottom:10px}
+.hy-fixloc-btn.on{background:#2563eb;color:#fff;border-style:solid;animation:hy-pulse 1s infinite}
+@keyframes hy-pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.hy-locbtn-row{display:flex;gap:6px;margin-bottom:8px}
+.iw-latlng-row{font-size:10px;color:#94a3b8;margin-bottom:6px}
+.iw-locfixed-badge{display:inline-block;background:#dbeafe;color:#2563eb;font-weight:700;padding:1px 6px;border-radius:8px;font-size:9.5px;margin-left:2px}
+.iw-rv-inline:hover{background:#22c55e;color:#fff;border-color:#22c55e}
+.iw-extra{font-size:10px;color:#3b82f6;margin-bottom:10px;font-weight:600}
+.iw-divider{height:1px;background:#f1f5f9;margin:4px 0}
+.iw-btn{width:100%;padding:8px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.iw-btn.done-btn{background:#f1f5f9;color:#64748b}.iw-btn.done-btn.is-done{background:#22c55e;color:#fff}
+.iw-date-row{display:flex;align-items:center;gap:5px;margin-top:5px}
+.iw-date-row label{font-size:10px;color:#22c55e;font-weight:600;white-space:nowrap}
+.iw-date-row input{flex:1;padding:4px 7px;border:1px solid #bbf7d0;border-radius:5px;font-size:11px;color:#15803d;background:#f0fdf4}
+.iw-memo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.iw-memo-title{font-size:10px;color:#94a3b8;font-weight:600}
+.iw-memo-status{font-size:9px;color:#94a3b8}
+.iw-memo textarea{width:100%;height:90px;border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;font-size:11px;resize:vertical;outline:none;font-family:sans-serif;color:#334155;background:#f8fafc;box-sizing:border-box}
+.iw-memo textarea:focus{border-color:#3b82f6}
+.iw-memo-actions{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.iw-memo-len{font-size:9px;color:#cbd5e1}
+.iw-memo-btns{display:flex;gap:4px}
+.iw-memo-save{padding:3px 8px;border:1px solid #bfdbfe;border-radius:4px;font-size:10px;cursor:pointer;background:#eff6ff;color:#1d4ed8;font-weight:600}
+.iw-memo-del{padding:3px 8px;border:1px solid #fecaca;border-radius:4px;font-size:10px;cursor:pointer;background:#fef2f2;color:#dc2626;font-weight:600}
+
+/* 사진 */
+.iw-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px}
+.iw-photo-thumb{aspect-ratio:1;border-radius:5px;overflow:hidden;cursor:pointer;position:relative;background:#f1f5f9}
+.iw-photo-thumb img{width:100%;height:100%;object-fit:cover}
+.iw-photo-del{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;opacity:0;transition:opacity .15s}
+.iw-photo-thumb:hover .iw-photo-del{opacity:1}
+.iw-photo-add{height:36px;border-radius:5px;border:1.5px dashed #e2e8f0;display:flex;flex-direction:row;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#94a3b8;gap:5px;transition:all .15s;padding:0 10px}
+.iw-photos:has(.iw-photo-thumb) .iw-photo-add{aspect-ratio:1;height:auto;padding:0;flex-direction:column;font-size:9px;gap:1px}
+.iw-photo-add:hover{border-color:#3b82f6;color:#3b82f6;background:#f0f9ff}
+.iw-photo-add span:first-child{font-size:14px}

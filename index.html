@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>소화전 점검 지도</title>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   ★ 버전은 여기 한 곳 ★
+   버전 규칙: 주(DB 변경/호환 깨짐).부(기능 추가).수(버그 수정) — 배포 시 CHANGELOG.md도 함께 갱신
+   · 이 값이 css/·js/·common 모든 파일 주소 뒤에 ?v=버전 으로 붙는다 → 버전을 올리면 전부 새로 받는다.
+   · css/·js/ 파일마다 첫머리에 같은 버전이 적혀 있다. 하나라도 다르거나 빠지면 화면 위에 경고가 뜬다.
+   · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
+     (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
+   ═══════════════════════════════════════════════════════════════════════ */
+const APP_VERSION = 'v3.0.0';
+
+const AppFiles = {
+  // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
+  css: ['variables','common','modal','print','home','map','marker','hydrant-form','overlay'],
+  commonBase: 'https://rcntiger.github.io/common/',
+  // 공통 모듈: 파일 → 그 파일이 만드는 전역 이름 (불러왔는지 확인용. null이면 확인 생략)
+  // ※ common의 기존 config.js(ConfigUtil)·kakao.js(KakaoUtil)는 쓰지 않는다 — keys.js(APP_KEYS)·kakao-geo.js(KakaoGeo)와 별개 파일
+  common: {'logger.js':null,'utils.js':'Utils','supabase.js':'SupabaseUtil','excel.js':'ExcelUtil','keys.js':'APP_KEYS','kakao-geo.js':'KakaoGeo'},
+  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','location','location-master','geocode','excel','search','gps','batch-fix','map-tools','print','print-map','roadview','mobile','init'],
+
+  loaded: {},                                   // js 파일이 스스로 적어 넣는 버전
+  reg(name, ver) { this.loaded[name] = ver; },
+  url(path) { return path + '?v=' + encodeURIComponent(APP_VERSION); },
+  // document.write로 넣어야 일반 <link>/<script> 태그와 똑같이 "순서대로, 화면 준비 전에" 불러온다
+  writeCss() { document.write(this.css.map(n => '<link rel="stylesheet" href="' + this.url('css/' + n + '.css') + '">').join('')); },
+  writeJs() {
+    const urls = Object.keys(this.common).map(f => this.url(this.commonBase + f))
+      .concat(this.js.map(n => this.url('js/' + n + '.js')));
+    document.write(urls.map(u => '<script src="' + u + '"><\/script>').join(''));
+  },
+  // 버전이 다르거나 못 불러온 파일 목록
+  check() {
+    const bad = [], root = getComputedStyle(document.documentElement);
+    this.css.forEach(n => {
+      const v = root.getPropertyValue('--appver-' + n).trim().replace(/^["']|["']$/g, '');
+      if (v !== APP_VERSION) bad.push({ file: 'css/' + n + '.css', ver: v, url: this.url('css/' + n + '.css') });
+    });
+    this.js.forEach(n => {
+      const v = this.loaded['js/' + n + '.js'];
+      if (v !== APP_VERSION) bad.push({ file: 'js/' + n + '.js', ver: v || '', url: this.url('js/' + n + '.js') });
+    });
+    Object.keys(this.common).forEach(f => {
+      const g = this.common[f];
+      if (g && typeof window[g] === 'undefined') bad.push({ file: 'common/' + f, ver: '', url: this.url(this.commonBase + f) });
+    });
+    return bad;
+  },
+  report() {
+    const bad = this.check();
+    if (!bad.length) return;
+    console.error('파일 버전 불일치 (앱 ' + APP_VERSION + '):', bad);
+    const box = document.createElement('div');
+    box.id = 'appVersionWarn';
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:40000;background:#7f1d1d;color:#fff;padding:10px 14px;font-size:13px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.5);max-height:45vh;overflow:auto';
+    const title = document.createElement('b');
+    title.textContent = '⚠ 앱 파일이 서로 맞지 않습니다 (앱 ' + APP_VERSION + ') — 일부 기능이 잘못 동작할 수 있습니다';
+    const list = document.createElement('div');
+    list.style.cssText = 'margin:4px 0 8px;font-size:12px;opacity:.9';
+    list.textContent = bad.map(b => b.file + (b.ver ? ' (' + b.ver + ')' : ' (불러오지 못함)')).join(' · ');
+    const btn = document.createElement('button');
+    btn.textContent = '🔄 파일 다시 받기';
+    btn.style.cssText = 'padding:6px 12px;border:none;border-radius:6px;background:#fff;color:#7f1d1d;font-weight:700;font-size:12px;cursor:pointer';
+    btn.onclick = () => {
+      btn.disabled = true; btn.textContent = '받는 중…';
+      // 브라우저에 남아 있는 옛 파일을 무시하고 서버에서 새로 받은 뒤 새로고침
+      Promise.all(bad.map(b => fetch(b.url, { cache: 'reload' }).catch(() => null))).then(() => location.reload());
+    };
+    box.append(title, list, btn);
+    document.body.appendChild(box);
+  }
+};
+AppFiles.writeCss();
+document.addEventListener('DOMContentLoaded', () => AppFiles.report());
+</script>
+</head>
+<body>
+
+<!-- ════ 홈 뷰 ════ -->
+<div id="homeView">
+  <div class="home-header">
+    <div class="home-logo">🧯</div>
+    <div>
+      <div class="home-title">소화전 점검 지도</div>
+      <div class="home-subtitle">금천소방서 · 소화전 점검</div>
+    </div>
+    <div id="adminBadge">
+      <a class="btn btn-ghost" href="manual.html" target="_blank" rel="noopener" style="padding:5px 11px;font-size:12px;font-weight:700;text-decoration:none">📖 사용설명서</a>
+      <span id="adminWho" style="font-size:11.5px;color:var(--lo);font-weight:700;display:none"></span>
+      <button class="btn btn-ghost" id="adminBtn" onclick="adminButton()" style="padding:5px 11px;font-size:12px;font-weight:700">🔐 관리자</button>
+    </div>
+  </div>
+  <div class="home-content">
+    <div class="section-header" style="margin-top:20px">
+      <div class="section-title">계획 목록</div>
+      <button class="btn btn-primary admin-only" onclick="showCreateModal()">+ 새 계획</button>
+    </div>
+    <div class="project-grid" id="projectGrid">
+      <div class="empty-state" id="projectEmpty" style="grid-column:1/-1;display:none">
+        <div class="big">📋</div>
+        <p>등록된 계획 목록이 없습니다</p>
+        <button class="btn btn-primary admin-only" onclick="showCreateModal()">+ 새 계획 만들기</button>
+      </div>
+    </div>
+    <div id="appVersion" style="text-align:center;color:var(--mt);font-size:10.5px;padding:24px 0 12px;opacity:.6"></div>
+  </div>
+</div>
+
+<!-- ════ 맵 뷰 ════ -->
+<div id="mapView" style="display:none;flex-direction:column">
+  <div class="map-header" id="mapHeader">
+    <div class="map-header-row1">
+      <button class="back-btn" id="backBtn" onclick="handleBack()">← 이전 화면</button>
+      <span class="map-header-title" id="mapHeaderTitle">점검 지도</span>
+    </div>
+    <div class="map-header-row2">
+      <button class="btn btn-ghost admin-only" onclick="showUploadModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">📂 소화전 업로드</button>
+      <button class="btn btn-ghost admin-only" onclick="showResetColModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">🔧 데이터 재설정</button>
+      <button class="btn" onclick="exportExcel()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0;background:#22c55e;color:#fff;border:1px solid #22c55e">📊 결과 파일출력</button>
+      <button class="btn btn-ghost" onclick="showPrintModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">🖨 인쇄</button>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="sidebar" id="sidebar">
+      <div class="panel" id="groupPanel" style="display:none">
+        <div class="ptitle" style="font-size:15px">👥 그룹</div>
+        <select id="groupSelect" onchange="onGroupSelectChange(this.value)" style="width:100%;padding:8px 9px;font-size:12px;font-weight:700"></select>
+      </div>
+      <div class="panel">
+        <div class="prog-wrap"><div class="prog-fill" id="progFill"></div><div class="prog-pct-text" id="progPctText">0%</div></div>
+        <div class="insp-row" style="display:flex;gap:8px;margin-top:12px">
+          <input type="text" id="inspNameGlobal" placeholder="점검자" oninput="saveInspName()"
+            style="flex:1;min-width:0;padding:8px 9px;font-size:12.5px;font-weight:700;border-radius:6px;box-sizing:border-box;border:1.5px solid var(--bd2)"/>
+          <input type="date" id="inspDateGlobal" onchange="saveInspDate()"
+            style="flex:1.3;min-width:0;padding:8px 6px;font-size:12.5px;font-weight:700;border-radius:6px;color-scheme:dark;box-sizing:border-box;border:1.5px solid var(--bd2)"/>
+        </div>
+      </div>
+      <div class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+          <div class="ptitle" style="margin:0;font-size:15px">🔍 소화전 검색</div>
+          <div style="display:flex;gap:4px">
+            <button class="fbtn" id="sortName" onclick="setSort('name')" style="font-size:12px;padding:3px 9px">이름</button>
+            <button class="fbtn" id="sortAddr" onclick="setSort('addr')" style="font-size:12px;padding:3px 9px">주소</button>
+            <button class="fbtn" id="sortType" onclick="setSort('type')" style="font-size:12px;padding:3px 9px">식구분</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="searchInput" placeholder="이름·주소 검색..." oninput="applyFilter()" style="flex:1;min-width:0;padding:7px 9px">
+          <button class="fbtn" id="pickModeBtn" onclick="togglePickMode()" title="여러 개 선택해서 지도에 표시" style="font-size:12px;padding:6px 10px;white-space:nowrap">☑ 선택</button>
+        </div>
+        <!-- 선택 모드일 때: 선택 개수 + 지도에 표시/취소 버튼 -->
+        <div id="pickBar" style="display:none;flex-direction:column;gap:6px;margin-top:8px;padding:7px 9px;border-radius:6px;background:rgba(47,129,247,.1);border:1px solid rgba(47,129,247,.3)">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span id="pickCount" style="font-size:12px;font-weight:700;color:var(--ac);flex:1">0개 선택됨</span>
+            <button class="fbtn" onclick="applyPickedFilter()" style="font-size:11.5px;padding:4px 9px;background:var(--ac);color:#fff;border-color:var(--ac);font-weight:700">🗺 지도에 표시</button>
+            <button class="fbtn" onclick="togglePickMode()" style="font-size:11.5px;padding:4px 9px">취소</button>
+          </div>
+          <div style="display:flex;gap:6px;font-size:11px;color:var(--mt)">
+            <span style="flex:1;line-height:1.4">💡 검색/그룹으로 먼저 좁힌 뒤 "보이는 전체"를 누르면 한 번에 담깁니다</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="fbtn" onclick="pickSelectAllVisible()" style="flex:1;font-size:11.5px;padding:5px 9px">☑ 보이는 전체 선택</button>
+            <button class="fbtn" onclick="pickClearAll()" style="flex:1;font-size:11.5px;padding:5px 9px">☐ 전체 해제</button>
+          </div>
+          <button class="fbtn admin-only" onclick="showRegroupModal()" style="font-size:11.5px;padding:6px 9px;font-weight:700;border-color:var(--lo);color:var(--lo)">🔀 선택한 소화전 조 변경 (관리자)</button>
+        </div>
+        <!-- 선택 표시가 적용된 상태: 해제 버튼 -->
+        <div id="pickedActivePill" style="display:none;align-items:center;gap:6px;margin-top:8px;padding:7px 9px;border-radius:6px;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3)">
+          <span id="pickedActiveText" style="font-size:12px;font-weight:700;color:var(--lo);flex:1"></span>
+          <button class="fbtn" onclick="clearPickedFilter()" style="font-size:11.5px;padding:4px 9px">전체 보기로</button>
+        </div>
+      </div>
+      <div class="list" id="listEl">
+        <div style="text-align:center;color:var(--mt);font-size:12px;padding:30px 12px">
+          📂 엑셀 파일을 업로드하면<br>점검 대상이 지도에 표시됩니다
+        </div>
+      </div>
+    </div>
+    <div class="map-wrap">
+      <div id="mapPh" style="position:absolute;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--mt);font-size:13px">
+        <div style="font-size:48px;opacity:.2">🗺️</div><div>지도 로딩 중...</div>
+      </div>
+      <div id="printMapTitle"></div>
+      <div id="batchFixBar" style="display:none;position:absolute;left:50%;top:62px;transform:translateX(-50%);z-index:300;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;background:#111827;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.45);font-size:12.5px;max-width:94%">
+        <span style="font-weight:700">✋ 일괄 위치수정</span>
+        <span style="color:#9ca3af">마커를 끌어 옮기세요 · 우클릭: 되돌리기</span>
+        <span id="bfCount" style="font-weight:800;color:#f59e0b">변경 0개</span>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="bfAddr" checked style="width:14px;height:14px;margin:0"> 주소도 갱신</label>
+        <button onclick="saveBatchFix()" style="padding:6px 12px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-weight:700;cursor:pointer">💾 저장</button>
+        <button onclick="revertBatchFix()" style="padding:6px 10px;border-radius:7px;border:1px solid #374151;background:#1f2937;color:#fff;font-weight:700;cursor:pointer">↺ 모두 되돌리기</button>
+        <button onclick="toggleBatchFix()" style="padding:6px 10px;border-radius:7px;border:1px solid #374151;background:#1f2937;color:#fff;font-weight:700;cursor:pointer">✕ 종료</button>
+      </div>
+      <div id="gpsPanel" style="display:none;position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:300;flex-direction:column;gap:8px;background:#111827;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.45);font-size:13px;width:min(92%,380px)">
+        <div id="gpsInfo"></div>
+        <div style="display:flex;gap:6px">
+          <button id="gpsOkBtn" onclick="finishPreciseGps(false)" style="flex:1;padding:8px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-weight:700;font-size:13px;cursor:pointer">이 위치로 확정</button>
+          <button onclick="stopPreciseGps();showToast('지도를 눌러 위치를 직접 지정할 수 있습니다','')" style="padding:8px 12px;border-radius:7px;border:1px solid #374151;background:#1f2937;color:#fff;font-weight:700;font-size:13px;cursor:pointer">취소</button>
+        </div>
+      </div>
+      <div id="printBar">
+        <span id="printBarInfo" style="font-weight:700;margin-right:4px"></span>
+        <button id="pmPrevBtn" onclick="pmMove(-1)">◀ 이전</button>
+        <button class="pri" onclick="pmPrint()">🖨 이 장 인쇄</button>
+        <button id="pmNextBtn" onclick="pmMove(1)">다음 ▶</button>
+        <button onclick="pmZoom(-1)" title="한 단계 확대 (가장자리가 잘릴 수 있음)">＋ 확대</button>
+        <button onclick="pmZoom(1)" title="한 단계 축소">－ 축소</button>
+        <button onclick="pmFlip()" title="이 장의 용지 방향 바꾸기">🔄 가로/세로</button>
+        <button onclick="pmRecenter()" title="지도를 움직였다면 담당구역 중앙으로 다시 맞춤">🎯 중앙 맞춤</button>
+        <button onclick="pmSplit()" title="소화전이 서로 겹치지 않을 만큼 자동 확대해 여러 장으로 나눔. 다시 누르면 한 단계 더 확대">📑 여러 장으로 나누기</button>
+        <button id="pmUnsplitBtn" onclick="pmUnsplit()" style="display:none" title="나눈 장들을 다시 한 장으로">↩ 한 장으로</button>
+        <button onclick="pmExit()">✕ 종료</button>
+      </div>
+      <div id="map"></div>
+      <div class="map-search" id="mapSearch">
+        <div class="map-search-row">
+          <input type="text" id="mapSearchInput" placeholder="장소·주소 검색..." onkeydown="if(event.key==='Enter')searchMap()">
+          <button class="map-search-sbtn" onclick="searchMap()">🔍</button>
+          <button class="map-search-sbtn" onclick="closeMapSearch()" style="color:var(--mt)">✕</button>
+        </div>
+        <div class="map-search-results" id="mapSearchResults"></div>
+      </div>
+      <div class="map-toolbar-top" id="mapToolbarTop">
+        <button class="tool-btn" id="btnSearch" onclick="toggleMapSearch()">🔍<span class="btn-txt"> 검색</span></button>
+        <button class="tool-btn" id="btnSat" onclick="toggleSat()">🛰️<span class="btn-txt"> 위성</span></button>
+        <button class="tool-btn" id="btnDist" onclick="toggleDist()">📏<span class="btn-txt"> 거리</span></button>
+        <button class="tool-btn" id="btnRv" onclick="toggleRvMode()">🔭<span class="btn-txt"> 로드뷰</span></button>
+        <button class="tool-btn" id="btnLabelToggle" onclick="toggleLabelVisibility()">🏷️<span class="btn-txt" id="btnLabelToggleTxt"> 이름 OFF</span></button>
+        <button class="tool-btn on pc-only" id="btnTipToggle" onclick="toggleTooltip()" title="마커에 마우스를 올렸을 때 소화전 번호 표시">🔢<span class="btn-txt" id="btnTipToggleTxt"> 툴팁 ON</span></button>
+        <button class="tool-btn pc-only admin-only" id="btnBatchFix" onclick="toggleBatchFix()" title="여러 소화전을 마우스로 끌어 한 번에 위치 수정 (PC 전용)">✋<span class="btn-txt"> 일괄 위치수정</span></button>
+        <button class="tool-btn" id="btnDistClear" onclick="clearDist()" style="display:none;font-size:11px;color:var(--hi)">✕<span class="btn-txt"> 초기화</span></button>
+      </div>
+      <div class="map-toolbar" id="mapToolbar">
+        <button class="tool-btn" onclick="mapZoomIn()" style="font-size:16px;font-weight:700;letter-spacing:0">＋</button>
+        <button class="tool-btn" onclick="mapZoomOut()" style="font-size:16px;font-weight:700;letter-spacing:0">－</button>
+        <button class="tool-btn" id="btnMyLoc" onclick="toggleMyLocation()" style="font-size:15px">📍<span class="btn-txt"> 현위치</span></button>
+      </div>
+      <div class="dist-info" id="distInfo">클릭: 측정점 &nbsp;|&nbsp; 더블클릭: 완료<br>거리: <span id="distVal">0</span></div>
+      <div class="rv-panel" id="rvPanel">
+        <div class="rv-header">
+          <span style="font-size:13px;font-weight:600;flex:1">🔭 로드뷰</span>
+          <span style="font-size:11px;color:var(--mt)" id="rvHint"></span>
+          <button onclick="toggleMinimap()" id="btnMinimap" style="padding:4px 9px;background:var(--sur2);color:var(--tx);border:1px solid var(--bd2);border-radius:6px;font-size:11px;cursor:pointer">🗺️ 미니맵</button>
+          <button onclick="closeRv()" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-left:8px">← 지도로</button>
+        </div>
+        <div class="rv-body">
+          <div id="rvMap" style="width:100%;height:100%"></div>
+          <div class="rv-minimap" id="rvMinimap"><div id="rvMinimapInner" style="width:100%;height:100%"></div></div>
+        </div>
+      </div>
+      <div id="diagPanel">
+        <div class="diag-box">
+          <div style="font-size:15px;font-weight:700;color:var(--hi);margin-bottom:8px" id="diagTitle"></div>
+          <div style="font-size:13px;color:var(--mt);margin-bottom:12px;line-height:1.6" id="diagDesc"></div>
+          <div style="background:var(--sur2);border-radius:8px;padding:12px;font-size:12px" id="diagFix"></div>
+          <button onclick="document.getElementById('diagPanel').style.display='none'" style="margin-top:12px;width:100%;padding:8px;background:var(--sur2);border:1px solid var(--bd2);border-radius:8px;color:var(--mt);cursor:pointer;font-size:12px">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="mob-toggle" id="mobToggle" onclick="toggleMobView()">🗺️ 지도 보기</button>
+</div>
+
+<!-- ════ 모달: 조 변경 ════ -->
+<div class="modal-bg" id="regroupModal">
+  <div class="modal" style="max-width:380px">
+    <h3>🔀 조 변경</h3>
+    <div id="regroupInfo" style="font-size:12.5px;color:var(--mt);margin-bottom:12px"></div>
+    <div class="form-row"><label>옮길 조</label>
+      <select id="regroupSel" onchange="document.getElementById('regroupNew').style.display=this.value==='__new'?'block':'none'" style="width:100%;padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:700"></select>
+      <input type="text" id="regroupNew" placeholder="예: A구역 4조" style="display:none;margin-top:6px">
+    </div>
+    <div style="font-size:11.5px;color:var(--mt);line-height:1.5">점검 기록은 그대로 유지됩니다. 바꾼 뒤 홈에서 "조별 세분계획 갱신"을 누르면 카드가 새 배정으로 맞춰집니다.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="hideModal('regroupModal')">취소</button>
+      <button class="btn btn-primary" id="regroupBtn" onclick="applyRegroup()">변경</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 모달: 관리자 로그인 ════ -->
+<div class="modal-bg" id="adminModal">
+  <div class="modal" style="max-width:360px">
+    <h3>🔐 관리자 로그인</h3>
+    <div style="font-size:12px;color:var(--mt);margin-bottom:12px;line-height:1.5">계획 만들기·엑셀 업로드·데이터 재설정·세분계획·일괄 위치수정은 관리자만 할 수 있습니다. 점검 입력은 로그인 없이 가능합니다.</div>
+    <div class="form-row"><label>이메일</label><input type="email" id="adminEmail" autocomplete="username"></div>
+    <div class="form-row"><label>비밀번호</label><input type="password" id="adminPw" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="hideModal('adminModal')">취소</button>
+      <button class="btn btn-primary" id="adminLoginBtn" onclick="adminLogin()">로그인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 모달: 변경 이력 ════ -->
+<div class="modal-bg" id="histModal">
+  <div class="modal" style="max-width:520px">
+    <h3 id="histTitle">📜 변경 이력</h3>
+    <div id="histBody" style="font-size:12.5px;max-height:60vh;overflow-y:auto"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="hideModal('histModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 모달: 인쇄 ════ -->
+<div class="modal-bg" id="printModal">
+  <div class="modal" style="max-width:420px">
+    <h3>🖨 인쇄</h3>
+    <div class="form-row">
+      <label>용지</label>
+      <select id="printPaper" style="width:100%;padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:700">
+        <option value="A4">A4 가로 (297×210mm)</option>
+        <option value="B4">B4 가로 (364×257mm) — A4보다 약 1.5배 넓음</option>
+        <option value="A3">A3 가로 (420×297mm) — A4의 2배</option>
+      </select>
+      <div style="font-size:11px;color:var(--mt);margin-top:4px">프린터에 해당 용지가 있어야 합니다. 인쇄창의 용지 크기도 같은지 확인하세요.</div>
+      <select id="printOrient" style="width:100%;margin-top:6px;padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:700">
+        <option value="auto">방향 자동 (지도: 담당구역 모양에 맞춰 가로/세로)</option>
+        <option value="landscape">가로</option>
+        <option value="portrait">세로</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>인쇄 범위</label>
+      <select id="printScope" onchange="_onPrintScopeChange()" style="width:100%;padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:700"></select>
+      <div id="printAnchorRow" style="display:none;margin-top:8px;padding:9px;border-radius:6px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.3)">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="printAnchorNo" placeholder="소화전 번호 (예: 001595)" inputmode="numeric" style="flex:1;min-width:120px;padding:7px 9px;font-size:13px;font-weight:700">
+          <select id="printRadius" style="width:auto;flex:none;padding:7px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:700">
+            <option value="100">반경 100m</option><option value="200">반경 200m</option><option value="300" selected>반경 300m</option><option value="500">반경 500m</option><option value="1000">반경 1km</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:var(--mt);margin-top:5px">기준 소화전을 지도 중앙에 두고 반경 안의 모든 소화전(조 구분 없이)을 인쇄합니다. 목록표는 가까운 순으로 거리와 함께 나옵니다.</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>인쇄 형식</label>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:13px">
+        <label style="display:flex;gap:7px;align-items:center;cursor:pointer;font-weight:600"><input type="radio" name="printFmt" value="list" checked> 📋 점검 목록표 <span style="color:var(--mt);font-weight:400;font-size:11.5px">(조별 페이지 분리, 현장 기록용)</span></label>
+        <label style="display:flex;gap:7px;align-items:center;cursor:pointer;font-weight:600"><input type="radio" name="printFmt" value="map"> 🗺 지도 <span style="color:var(--mt);font-weight:400;font-size:11.5px">(조별 색상 범례)</span></label>
+        <div style="margin-left:22px;display:flex;flex-direction:column;gap:5px;padding:7px 9px;border-radius:6px;background:var(--sur2);font-size:12.5px">
+          <span style="font-size:11px;color:var(--mt);font-weight:700">지도 축척</span>
+          <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="radio" name="printScale" value="fit" checked> 한 장에 맞춤 (자동)</label>
+          <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="radio" name="printScale" value="current"> 지금 화면의 축척 그대로 <span id="printCurLevel" style="color:var(--mt);font-size:11px"></span></label>
+          <span style="font-size:10.5px;color:var(--mt);line-height:1.4">화면 축척 그대로 선택 시, 범위가 한 장을 넘으면 같은 축척으로 여러 장에 나눠 빠짐없이 인쇄합니다.</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-row" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printUndoneOnly"> 미완료 소화전만</label>
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printMapLabels" checked> 지도 인쇄 시 소화전 번호 표시</label>
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printMapPerJo" checked> 지도 인쇄 시 조별로 한 장씩 (각 조 담당구역이 중앙)</label>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="hideModal('printModal')">취소</button>
+      <button class="btn btn-primary" onclick="doPrint()">🖨 인쇄</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 모달: 프로젝트 수정 ════ -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3>✏️ 프로젝트 수정</h3>
+    <input type="hidden" id="editProjId">
+    <div class="form-row">
+      <label>프로젝트명 *</label>
+      <input type="text" id="editProjName" placeholder="예: 소방용수 검수 2026-06">
+    </div>
+    <div class="form-row">
+      <label>설명 (선택)</label>
+      <textarea id="editProjDesc" placeholder="점검 목적, 대상 지역 등"></textarea>
+    </div>
+    <div class="form-row">
+      <label>보관 기간</label>
+      <select id="editProjExpire" style="padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px">
+        <option value="">변경 안 함</option>
+        <option value="clear">영구 보관으로 변경</option>
+        <option value="1">오늘부터 1개월</option>
+        <option value="3">오늘부터 3개월</option>
+        <option value="6">오늘부터 6개월</option>
+        <option value="12">오늘부터 1년</option>
+      </select>
+      <div style="font-size:11px;color:var(--mt);margin-top:5px" id="editExpireInfo"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="hideModal('editModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveEditProject()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 모달: 프로젝트 생성 ════ -->
+<div class="modal-bg" id="createModal">
+  <div class="modal">
+    <h3>📋 새 계획</h3>
+    <div class="form-row">
+      <label>프로젝트명 *</label>
+      <input type="text" id="projName" placeholder="예: 소방용수 검수 2026-06">
+    </div>
+    <div class="form-row">
+      <label>설명 (선택)</label>
+      <textarea id="projDesc" placeholder="점검 목적, 대상 지역 등"></textarea>
+    </div>
+    <div class="form-row">
+      <label>보관 기간 (선택)</label>
+      <select id="projExpire" style="padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px">
+        <option value="">영구 보관</option>
+        <option value="1">1개월</option>
+        <option value="3">3개월</option>
+        <option value="6">6개월</option>
+        <option value="12">1년</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="hideModal('createModal')">취소</button>
+      <button class="btn btn-primary" onclick="createProject()">만들기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 모달: 엑셀 업로드 ════ -->
+<!-- ════ 모달: 컬럼 재설정 옵션 (컬럼 매핑/미리보기/필터는 공통 ExcelUtil.createReader 사용) ════ -->
+<div class="modal-bg" id="resetOptModal">
+  <div class="modal" style="max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0">🔧 엑셀 재설정</h3>
+      <button onclick="hideModal('resetOptModal')" style="background:none;border:none;color:var(--mt);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px">✕</button>
+    </div>
+    <div style="background:rgba(255,123,114,.08);border:1px solid rgba(255,123,114,.25);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:12px;color:var(--hi);line-height:1.7">
+      ⚠️ 재설정하면 기존 점검 항목이 새 매핑으로 교체됩니다. 항목이 새로 생성되어 아래 기록은 더 이상 연결되지 않으니, 정리할 항목을 선택하세요.
+    </div>
+    <div style="background:var(--sur2);border-radius:var(--r);padding:12px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--mt);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">기존 데이터 처리</div>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="resetDelDone" style="margin-top:2px;accent-color:var(--hi)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">점검 완료 기록 삭제</b><br><span style="color:var(--mt)">완료 여부 · 점검 일자</span></span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="resetDelMemo" style="margin-top:2px;accent-color:var(--hi)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">메모 삭제</b><br><span style="color:var(--mt)">각 항목에 입력한 메모</span></span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+        <input type="checkbox" id="resetDelPhotos" style="margin-top:2px;accent-color:var(--hi)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">사진 삭제</b><br><span style="color:var(--mt)">Storage에서도 완전 삭제됨</span></span>
+      </label>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="hideModal('resetOptModal')">취소</button>
+      <button class="btn btn-primary" onclick="proceedReset()">다음 → 컬럼 선택</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사진 뷰어 -->
+<div class="photo-viewer" id="photoViewer" onclick="closePhotoViewer()">
+  <span class="photo-viewer-close">✕</span>
+  <img id="photoViewerImg" src="">
+  <div class="photo-viewer-caption" id="photoViewerCaption"></div>
+</div>
+
+<!-- 사진 바텀시트 -->
+<div class="photo-sheet-bg" id="photoSheetBg" onclick="closePhotoSheet(event)">
+  <div class="photo-sheet" onclick="event.stopPropagation()">
+    <div class="photo-sheet-title">사진 추가</div>
+    <button class="photo-sheet-btn" onclick="triggerPhotoInput('camera')">
+      <span class="ps-icon">📷</span>
+      <div><div>카메라로 촬영</div><div style="font-size:11px;color:var(--mt);margin-top:2px">현장 사진을 바로 찍기</div></div>
+    </button>
+    <button class="photo-sheet-btn" onclick="triggerPhotoInput('gallery')">
+      <span class="ps-icon">🖼️</span>
+      <div><div>갤러리에서 선택</div><div style="font-size:11px;color:var(--mt);margin-top:2px">저장된 사진 불러오기</div></div>
+    </button>
+    <button class="photo-sheet-cancel" onclick="closePhotoSheet()">취소</button>
+  </div>
+</div>
+<!-- 카메라 촬영용 / 갤러리용 hidden input -->
+<input type="file" id="photoInputCamera" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoInput(this)">
+<input type="file" id="photoInputGallery" accept="image/*" multiple style="display:none" onchange="handlePhotoInput(this)">
+
+<div class="toast" id="toast"></div>
+
+
+
+<!-- ━━ 스크립트 — 공통 모듈(rcntiger.github.io/common) → js/ 순서. 목록·버전은 맨 위 AppFiles에서 관리 ━━ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>AppFiles.writeJs();</script>
+</body>
+</html>

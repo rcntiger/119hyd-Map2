@@ -1,0 +1,108 @@
+/* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
+:root{--appver-map:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+/* ── 맵 뷰 ── */
+
+/* ═══ Map / Layout ═══ */
+#mapView{display:none;height:100vh;height:100dvh;flex-direction:column}
+.map-header{padding:8px 14px;background:var(--sur);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:44px}
+.map-header-row1,.map-header-row2{display:contents}
+.map-header::-webkit-scrollbar{display:none}
+.map-header .back-btn{padding:4px 10px;border:1px solid #2563eb;border-radius:6px;background:#2563eb;color:#fff;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+.map-header .back-btn:hover{color:var(--tx)}
+.map-header-title{font-size:13px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layout{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{width:300px;flex-shrink:0;background:var(--sur);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
+.map-wrap{flex:1;position:relative;min-height:0}
+#map{width:100%;height:100%}
+.panel{padding:10px 12px;border-bottom:1px solid var(--bd)}
+.ptitle{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--mt);margin-bottom:7px}
+.stats-row{display:flex;gap:4px}
+.stat{flex:1;background:var(--sur2);border-radius:6px;padding:6px 4px;text-align:center}
+.stat .n{font-size:15px;font-weight:700}
+.stat .l{font-size:9px;color:var(--mt);margin-top:1px}
+.prog-wrap{height:20px;background:var(--sur2);border-radius:10px;overflow:hidden;margin-top:8px;position:relative}
+.prog-fill{height:100%;background:var(--lo);border-radius:10px;transition:width .4s}
+.prog-pct-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+.prog-label{font-size:15px;font-weight:700;color:var(--tx);margin-top:5px;text-align:center}
+.fbtn{padding:4px 9px;border-radius:20px;border:1px solid var(--bd2);background:var(--sur2);color:var(--mt);font-size:11px;cursor:pointer;user-select:none;transition:all .12s}
+.fbtn.active{color:#fff;border-color:transparent;background:var(--ac)}
+.search-wrap input{width:100%;padding:7px 9px}
+.list{flex:1;overflow-y:auto;padding:5px}
+.list::-webkit-scrollbar{width:3px}
+.list::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+.item{padding:7px 10px;border-radius:var(--r);margin-bottom:3px;cursor:pointer;transition:all .12s;display:flex;align-items:flex-start;gap:7px;border:1px solid transparent}
+.item .pick-chk{margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:var(--ac);cursor:pointer}
+.fbtn.active{background:var(--ac);color:#fff;border-color:var(--ac)}
+.item:hover{background:var(--sur2)}.item.active{background:rgba(47,129,247,.1);border-color:rgba(47,129,247,.25)}.item.hidden{display:none}
+.item.done-item .iname{color:var(--lo)}
+.item.done-item .done-badge{display:inline-flex}
+.team-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.ibody{flex:1;min-width:0}
+.iname{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.isub{font-size:10px;color:var(--mt);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.itags{margin-top:3px;display:flex;gap:3px;flex-wrap:wrap}
+.itag{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;background:rgba(255,255,255,.06);color:var(--mt)}
+.itag.done-tag{background:rgba(63,185,80,.12);color:var(--lo)}
+.done-badge{display:none;font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(63,185,80,.12);color:var(--lo);font-weight:600;align-items:center;gap:3px}
+@media(max-width:600px){
+  .sidebar{width:100%;height:auto;max-height:calc(100dvh - 44px - 48px - 60px);border-right:none;border-bottom:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
+  .map-wrap{flex:1;min-height:0;min-width:0}
+  #map{width:100%;height:100%;min-height:0}
+  .layout{height:100%}
+  .sidebar.map-mode{display:none!important}
+  .sidebar.map-mode~.map-wrap{height:100%}
+  .mob-toggle{display:block!important}
+  .map-toolbar{display:none!important}
+  .map-toolbar-top{display:none!important}
+  .map-header{flex-direction:column;align-items:stretch;overflow-x:visible;overflow-y:visible;gap:5px;padding:6px 8px;min-height:0}
+  .map-header-row1,.map-header-row2{display:flex;align-items:center;gap:8px;width:100%}
+  .map-header-row1{justify-content:flex-start}
+  .map-header-row1>div{margin-left:0}
+  .map-header-row2{justify-content:flex-end;flex-wrap:wrap;row-gap:6px}
+  .map-header-row2 .btn{flex:0 1 auto;padding:6px 10px!important;font-size:12px!important;font-weight:700!important;text-align:center;white-space:nowrap}
+  .map-header-title{display:none}
+  .tool-btn .btn-txt{display:inline}
+  .tool-btn{padding:6px 8px!important;font-size:11px!important}
+  .sidebar.map-mode~.map-wrap .map-toolbar{display:flex!important}
+  .sidebar.map-mode~.map-wrap .map-toolbar-top{display:flex!important}
+  .insp-row #inspNameGlobal{font-size:12px!important;padding:8px 6px!important}
+  .insp-row #inspDateGlobal{font-size:11.5px!important;padding:8px 3px!important}
+  .iw-wrap{max-height:64vh!important;max-width:82vw!important;overflow-y:scroll!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+  .iw-memo textarea{height:64px!important}
+  .iw-photos{grid-template-columns:repeat(3,1fr)!important}
+  .dist-info{bottom:64px!important;font-size:11px!important;padding:6px 12px!important}
+  .toast{bottom:64px!important;right:50%!important;transform:translate(50%,60px)!important;text-align:center}
+  .toast.show{transform:translate(50%,0)!important}
+}
+.mob-toggle{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--ac);color:#fff;border:none;border-radius:20px;padding:8px 22px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+
+/* 툴바 */
+.map-toolbar{position:absolute;top:190px;right:10px;z-index:9999;display:none;flex-direction:column;gap:6px}
+.map-toolbar-top{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:9999;display:none;flex-direction:row;gap:6px}
+.tool-btn{padding:7px 12px;border:1px solid var(--bd2);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;background:var(--sur);color:var(--tx);box-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap}
+.tool-btn:hover{background:var(--sur2)}.tool-btn.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tool-btn.on-sat{background:#7c3aed;color:#fff;border-color:#7c3aed}
+.tool-btn.on-rv{background:#22c55e;color:#fff;border-color:#22c55e}
+
+/* 지도 검색 */
+.map-search{position:absolute;top:10px;left:10px;z-index:9999;display:none;flex-direction:column;gap:4px;width:240px}
+.map-search-row{display:flex;gap:4px}
+.map-search input{flex:1;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--r);font-size:12px;background:var(--sur);color:var(--tx);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.map-search-sbtn{padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--r);background:var(--sur);color:var(--tx);font-size:12px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap;font-weight:600}
+.map-search-results{background:var(--sur);border:1px solid var(--bd2);border-radius:var(--r);max-height:200px;overflow-y:auto;display:none;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.sri{padding:8px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--bd)}
+.sri:last-child{border:none}.sri:hover{background:var(--sur2)}
+.sri-name{font-weight:600;margin-bottom:2px}
+.sri-addr{color:var(--mt);font-size:10px}
+
+/* 거리재기 */
+.dist-info{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);background:var(--sur);border:1px solid var(--bd2);border-radius:var(--r);padding:8px 16px;font-size:12px;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.5);text-align:center;white-space:nowrap}
+.dist-info span{color:var(--ac);font-weight:700;font-size:14px}
+
+/* 로드뷰 */
+.rv-panel{position:absolute;inset:0;z-index:200;display:none;flex-direction:column}
+.rv-header{background:var(--sur);border-bottom:1px solid var(--bd);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rv-body{flex:1;position:relative;min-height:0}
+#rvMap{width:100%;height:100%}
+.rv-minimap{position:absolute;bottom:12px;right:12px;width:180px;height:140px;border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,.8);box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:300;display:none}

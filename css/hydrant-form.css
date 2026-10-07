@@ -1,0 +1,27 @@
+/* 119hyd-Map2 · css/hydrant-form.css — 정보카드 안의 소화전 점검 입력 */
+:root{--appver-hydrant-form:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+
+/* ── 소화전 점검 입력 카드 ── */
+.hy-status-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin:2px 0 8px}
+.hy-section{margin-bottom:10px}
+.hy-collapsible-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.hy-collapsible{margin-bottom:8px;flex:1 1 calc(50% - 4px);min-width:0}
+.hy-collapsible.open{flex:1 1 100%}
+.hy-collapse-btn{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;box-sizing:border-box}
+.hy-collapse-btn.open{border-color:#2563eb;background:#eff6ff;border-bottom-left-radius:0;border-bottom-right-radius:0;flex-direction:row;align-items:center;justify-content:space-between}
+.hy-collapse-val{color:#2563eb;font-weight:800;font-size:11px}
+.hy-collapse-body{border:1.5px solid #2563eb;border-top:none;border-bottom-left-radius:8px;border-bottom-right-radius:8px;padding:10px 12px;background:#fff}
+.hy-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+.hy-req{color:#ef4444;font-size:9px;text-transform:none}
+.hy-toggle-row{display:flex;gap:5px;flex-wrap:wrap}
+.hy-grade-row{flex-wrap:nowrap}
+.hy-grade-row .hy-tbtn{flex:1 1 0;min-width:0;padding:8px 2px;font-size:13px}
+.hy-tbtn{flex:1;min-width:64px;padding:7px 6px;border:1.5px solid #e2e8f0;border-radius:7px;background:#f8fafc;color:#475569;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s;font-family:inherit}
+.hy-tbtn:hover{border-color:#94a3b8}
+.hy-tbtn.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.hy-tbtn.hy-good.on{background:#16a34a;border-color:#16a34a}
+.hy-tbtn.hy-warn.on{background:#d97706;border-color:#d97706}
+.hy-tbtn.hy-bad.on{background:#dc2626;border-color:#dc2626}
+.hy-select{width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:11px;color:#334155;background:#f8fafc;outline:none;font-family:inherit}
+.hy-defect{width:100%;margin-top:7px;min-height:60px;padding:7px 9px;border:1.5px solid #fecaca;border-radius:7px;font-size:11px;color:#334155;background:#fef2f2;outline:none;resize:vertical;font-family:inherit;box-sizing:border-box}
+.hy-saved-info{font-size:10px;color:#94a3b8;text-align:center;margin-top:5px}
