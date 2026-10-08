@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.0.0';
+const APP_VERSION = 'v3.1.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -22,7 +22,7 @@ const AppFiles = {
   // 공통 모듈: 파일 → 그 파일이 만드는 전역 이름 (불러왔는지 확인용. null이면 확인 생략)
   // ※ common의 기존 config.js(ConfigUtil)·kakao.js(KakaoUtil)는 쓰지 않는다 — keys.js(APP_KEYS)·kakao-geo.js(KakaoGeo)와 별개 파일
   common: {'logger.js':null,'utils.js':'Utils','supabase.js':'SupabaseUtil','excel.js':'ExcelUtil','keys.js':'APP_KEYS','kakao-geo.js':'KakaoGeo'},
-  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','location','location-master','geocode','excel','search','gps','batch-fix','map-tools','print','print-map','roadview','mobile','init'],
+  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','location','location-master','geocode','excel','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
 
   loaded: {},                                   // js 파일이 스스로 적어 넣는 버전
   reg(name, ver) { this.loaded[name] = ver; },
@@ -186,6 +186,14 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
         <div style="font-size:48px;opacity:.2">🗺️</div><div>지도 로딩 중...</div>
       </div>
       <div id="printMapTitle"></div>
+      <div id="areaBar" style="display:none;position:absolute;left:50%;top:62px;transform:translateX(-50%);z-index:300;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;background:#111827;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.45);font-size:12.5px;max-width:94%">
+        <span style="font-weight:700">🖨 인쇄 영역 지정</span>
+        <span id="areaBarInfo" style="color:#d1d5db"></span>
+        <button id="areaModeBtn" onclick="areaToggleMode()" style="padding:6px 10px;border-radius:7px;border:1px solid #374151;background:#1f2937;color:#fff;font-weight:700;cursor:pointer"></button>
+        <button id="areaGoBtn" onclick="areaConfirm()" style="padding:6px 12px;border-radius:7px;border:none;background:#2563eb;color:#fff;font-weight:700;cursor:pointer">🖨 이 영역 인쇄</button>
+        <button onclick="areaCancel()" style="padding:6px 10px;border-radius:7px;border:1px solid #374151;background:#1f2937;color:#fff;font-weight:700;cursor:pointer">✕ 취소</button>
+      </div>
+      <div id="areaLayer" style="display:none;position:absolute;inset:0;z-index:250;cursor:crosshair;user-select:none"></div>
       <div id="batchFixBar" style="display:none;position:absolute;left:50%;top:62px;transform:translateX(-50%);z-index:300;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;background:#111827;color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.45);font-size:12.5px;max-width:94%">
         <span style="font-weight:700">✋ 일괄 위치수정</span>
         <span style="color:#9ca3af">마커를 끌어 옮기세요 · 우클릭: 되돌리기</span>
@@ -336,6 +344,11 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
           </select>
         </div>
         <div style="font-size:11px;color:var(--mt);margin-top:5px">기준 소화전을 지도 중앙에 두고 반경 안의 모든 소화전(조 구분 없이)을 인쇄합니다. 목록표는 가까운 순으로 거리와 함께 나옵니다.</div>
+      </div>
+      <div id="printAreaRow" style="display:none;margin-top:8px;padding:9px;border-radius:6px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.35)">
+        <div style="font-size:11px;color:var(--mt);font-weight:700;margin-bottom:4px">영역 안에서 표시할 소화전</div>
+        <select id="printAreaScope" style="width:100%;padding:8px;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:700"></select>
+        <div style="font-size:11px;color:var(--mt);margin-top:5px;line-height:1.5">[인쇄]를 누르면 지도에서 드래그해 영역을 그립니다. 지도는 <b>그때 화면에 보이는 축척 그대로</b> 그 영역만 인쇄하고(지번이 보이게 하려면 지번이 보일 때까지 확대한 뒤 확정), 한 장을 넘으면 같은 축척으로 여러 장에 나눕니다. 목록표는 영역 안의 소화전만 나옵니다.</div>
       </div>
     </div>
     <div class="form-row">

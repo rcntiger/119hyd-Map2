@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/common.css — 초기화 · 버튼 · 입력 · 배지 · 토스트 · 관리자 전용/PC 전용 표시 */
-:root{--appver-common:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-common:"v3.1.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}

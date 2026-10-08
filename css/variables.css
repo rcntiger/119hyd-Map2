@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/variables.css — CSS 변수 (다크 테마 색상 · 공통 ExcelUtil 테마) */
-:root{--appver-variables:"v3.0.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-variables:"v3.1.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 :root{
   --bg:#0d1117;--sur:#161b22;--sur2:#21262d;--sur3:#2d333b;

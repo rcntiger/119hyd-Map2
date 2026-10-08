@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print.js — 인쇄: 범위 선택 · 점검 목록표 */
-AppFiles.reg('js/print.js','v3.0.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 (전체 / 팀 / 조) ══════════ */
 // 범위 값: 'all' | 'team:1팀' | 'jo:1팀 2조'
@@ -27,9 +27,11 @@ function _scopeLabel(scope){
 }
 function printFromHydrant(idx){closeIw();showPrintModal(idx);}
 function _onPrintScopeChange(){
-  const isA=document.getElementById('printScope').value==='anchor';
+  const v=document.getElementById('printScope').value;
+  const isA=v==='anchor',isArea=v==='area';
   document.getElementById('printAnchorRow').style.display=isA?'block':'none';
-  const pj=document.getElementById('printMapPerJo');if(pj)pj.closest('label').style.opacity=isA?.4:1;
+  document.getElementById('printAreaRow').style.display=isArea?'block':'none';
+  const pj=document.getElementById('printMapPerJo');if(pj)pj.closest('label').style.opacity=(isA||isArea)?.4:1;
   if(isA)setTimeout(()=>{const i=document.getElementById('printAnchorNo');if(!i.value)i.focus();},50);
 }
 // 입력한 번호로 기준 소화전 찾기: '001595', '1595', '금천-001595' 모두 허용
@@ -70,6 +72,11 @@ function showPrintModal(anchorIdx){
   if(opts.some(o=>o[0]===cur))sel.value=cur;
   // 특정 소화전 기준(반경) — 팝업의 "기준 인쇄"로 열면 그 소화전이 미리 선택됨
   sel.insertAdjacentHTML('beforeend','<option value="anchor">📍 특정 소화전 기준 (반경)</option>');
+  // 지도에서 영역 지정 (드래그) — PC 전용. 영역 안에서 표시할 소화전 범위는 지금 보고 있는 범위가 기본값
+  const as=document.getElementById('printAreaScope');
+  as.innerHTML=opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('');
+  if(opts.some(o=>o[0]===cur))as.value=cur;
+  if(_areaAllowed())sel.insertAdjacentHTML('beforeend','<option value="area">✏️ 지도에서 영역 지정 (드래그)</option>');
   const sc=safeStorage.get('hy_print_scale','fit');
   document.querySelectorAll('input[name="printScale"]').forEach(r=>{r.checked=r.value===sc;r.onchange=()=>{document.querySelector('input[name="printFmt"][value="map"]').checked=true;};});
   const lvEl=document.getElementById('printCurLevel');
@@ -114,6 +121,11 @@ function doPrint(){
   const scope=document.getElementById('printScope').value;
   const fmt=document.querySelector('input[name="printFmt"]:checked')?.value||'list';
   const undoneOnly=document.getElementById('printUndoneOnly').checked;
+  if(scope==='area'){
+    hideModal('printModal');
+    areaStart({fmt,scope:document.getElementById('printAreaScope').value,undoneOnly,showLabels:document.getElementById('printMapLabels').checked});
+    return;
+  }
   if(scope==='anchor'){
     const a=_findAnchor();
     if(!a){showToast('기준 소화전을 찾을 수 없습니다. 번호를 확인해주세요 (좌표가 있는 소화전만 가능)','err');return;}
@@ -156,7 +168,7 @@ function _printList(scope,list,opt){
     return `<section${gi?' class="pb"':''}><h2>${esc(g)} <small>${rows.length}개 · 완료 ${done}개</small></h2>
       <table><thead><tr><th style="width:28px">No</th>${A?'<th style="width:46px">거리</th>':''}<th style="width:56px">시설번호</th><th>도로명주소</th><th>지번주소</th><th style="width:64px">위도</th><th style="width:70px">경도</th><th style="width:34px">식구분</th><th style="width:56px">점검결과</th><th style="width:38px">도색</th><th style="width:38px">보온</th><th style="width:34px">완료</th><th style="width:13%">메모 / 비고</th></tr></thead><tbody>${trs}</tbody></table></section>`;
   }).join('');
-  const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)} - ${esc(A?opt.label:_scopeLabel(scope))}</title>
+  const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)} - ${esc(opt?.label||_scopeLabel(scope))}</title>
 <style>
 @page{size:${_paper().w}mm ${_paper().h}mm;margin:10mm}
 body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;color:#111;margin:0;font-size:${_paper().key==='A4'?11:12.5}px}
@@ -170,7 +182,7 @@ td.c{text-align:center}td.b{font-weight:700}td.m{font-size:10px;color:#333}td.n{
 thead{display:table-header-group}
 .pb{page-break-before:always}
 </style></head><body>
-<header><h1>🧯 ${esc(title)} — ${esc(A?opt.label:_scopeLabel(scope))}</h1><div>출력일 ${today} · 총 ${list.length}개 · 완료 ${list.filter(d=>doneMap[d.id]).length}개 · 점검자 ________</div></header>
+<header><h1>🧯 ${esc(title)} — ${esc(opt?.label||_scopeLabel(scope))}</h1><div>출력일 ${today} · 총 ${list.length}개 · 완료 ${list.filter(d=>doneMap[d.id]).length}개 · 점검자 ________</div></header>
 ${sections}
 <script>window.onload=()=>{setTimeout(()=>window.print(),300)};<\/script>
 </body></html>`;

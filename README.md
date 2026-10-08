@@ -49,7 +49,7 @@
 
 | 구분 | 사용 기술 |
 |---|---|
-| 프론트엔드 | 순수 HTML/CSS/JS — `css/` 9개 · `js/` 28개 파일 (프레임워크·번들러 없음) |
+| 프론트엔드 | 순수 HTML/CSS/JS — `css/` 9개 · `js/` 29개 파일 (프레임워크·번들러 없음) |
 | 지도 | Kakao Maps JS SDK (+ services 라이브러리: 지오코딩/장소검색) |
 | 백엔드 | Supabase (PostgreSQL + PostgREST + Storage) |
 | 사진 저장 | Cloudinary (unsigned upload preset) |
@@ -103,6 +103,7 @@ common의 기존 `config.js`(ConfigUtil)·`kakao.js`(KakaoUtil)는 이 앱에서
 │   ├── map-tools.js        지도 도구: 확대/축소 · 툴팁 · 이름표 · 위성 · 거리재기
 │   ├── print.js            인쇄: 범위 선택 · 점검 목록표
 │   ├── print-map.js        지도 인쇄 · 여러 장 나누기 · 미리보기 조작
+│   ├── print-area.js       인쇄 영역 지정 (지도에서 드래그, PC 전용)
 │   ├── roadview.js         로드뷰
 │   ├── mobile.js           모바일 지도/목록 전환
 │   └── init.js             시작 (DOMContentLoaded) · 키보드

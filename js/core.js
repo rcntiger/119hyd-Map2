@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/core.js — 기본 도구 (esc · DOM 캐시 · safeStorage · 토스트 · 모달 · sbClient) */
-AppFiles.reg('js/core.js','v3.0.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/core.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Utils & DOM Cache ══════════ */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}

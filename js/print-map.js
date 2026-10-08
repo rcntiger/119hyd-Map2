@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print-map.js — 지도 인쇄 · 여러 장 나누기 · 미리보기 조작 */
-AppFiles.reg('js/print-map.js','v3.0.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print-map.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ── 지도 인쇄 ──
 // 페이지(전체 범위 1장 또는 조별 여러 장)마다: 해당 소화전만 남기고 → 담당구역 중앙에 맞춰 확대 → 인쇄
@@ -27,11 +27,13 @@ function _printMap(scope,list,showLabels,perJo,opt){
   const scaleMode=_printScaleMode();
   const userLevel=kakaoMap.getLevel(); // 인쇄 버튼 누르기 전 화면에서 보던 확대 단계
   const pts=list.filter(d=>d.lat&&d.lng);
-  if(!pts.length){showToast('좌표가 있는 소화전이 없습니다','err');return;}
+  if(!pts.length&&!opt?.area){showToast('좌표가 있는 소화전이 없습니다','err');return;}
   const byG={};
   pts.forEach(d=>{const g=String(d.group_name||'').trim()||'(미지정)';(byG[g]=byG[g]||[]).push(d);});
   const gNames=Object.keys(byG).sort((a,b)=>a.localeCompare(b,'ko',{numeric:true}));
-  const pages=opt?.anchor
+  const pages=opt?.area
+    ?[{label:opt.label,pts,area:opt.area}]   // 지정 영역: 영역 테두리가 기준 (소화전이 없어도 지도는 인쇄)
+    :opt?.anchor
     ?[{label:opt.label,pts,anchor:{lat:opt.anchor.lat,lng:opt.anchor.lng,r:opt.r,id:opt.anchor.id,no:_shortNo(opt.anchor.name)}}]
     :(perJo&&gNames.length>1)
     ?gNames.map(g=>({label:g,pts:byG[g]}))
@@ -61,11 +63,25 @@ function _printMap(scope,list,showLabels,perJo,opt){
     applyFilter();
     setTimeout(()=>{kakaoMap.relayout();kakaoMap.setCenter(prev.center);kakaoMap.setLevel(prev.level);},50);
   };
-  pages.forEach(pg=>{pg.orient=orientSetting==='auto'?(pg.anchor?'landscape':_autoOrient(pg.pts)):orientSetting;});
+  pages.forEach(pg=>{pg.orient=orientSetting==='auto'?(pg.area?_areaOrient(pg.area):pg.anchor?'landscape':_autoOrient(pg.pts)):orientSetting;});
   if(clusterer&&clusterer.setMinLevel){clusterer.setMinLevel(20);clusterer.redraw();}
   setZoomRuleOff(true);
   let finalPages=pages;
-  if(scaleMode==='current'){
+  if(opt?.area){
+    // 지정 영역: 영역을 그릴 때 보던 축척 그대로, 영역을 용지 한 장 크기씩 나눔
+    const pg=pages[0];
+    const made=_pmMakeAreaTiles(pg,userLevel);
+    if(!made){showToast('이 축척으로는 영역이 너무 넓습니다. 영역을 줄이거나 지도를 축소한 뒤 다시 시도하세요','err');restore();return;}
+    const tiles=made.tiles;
+    if(tiles.length>30&&!confirm(`현재 축척으로 ${tiles.length}장이 필요합니다. 계속할까요?\n(영역을 줄이거나 B4/A3 용지를 쓰면 장 수가 줄어듭니다)`)){restore();return;}
+    if(tiles.length===1){
+      pg.fixed={lat:tiles[0].lat,lng:tiles[0].lng,level:userLevel};
+    }else{
+      pg.split={n:0,tiles,scaleFixed:true};
+      finalPages=[pg,..._pmTilePages(pg,tiles,userLevel)];
+    }
+    showToast(`지정 영역: 화면 축척(막대 ${_levelScaleText(userLevel)}) 그대로 ${tiles.length}장`+(tiles.length>1?' + 번호 개요 1장':'')+(made.skipped?` · 소화전 없는 칸 ${made.skipped}장 제외`:''),'ok');
+  }else if(scaleMode==='current'){
     // 화면 축척 그대로: 각 페이지(조)를 그 축척에서 용지 한 장 크기로 나눔
     finalPages=[];let total=0;
     for(const pg of pages){
@@ -125,6 +141,12 @@ function pmRecenter(){
    소화전이 하나도 없는 칸은 건너뛰고, 이웃 장과 가장자리를 약 8% 겹쳐 이어 붙이기 쉽게 한다. */
 // 한 장 맞춤: 기준 소화전 페이지는 반경 원이 꽉 차게(원 중심 = 지도 중심), 그 외는 담당구역 중앙
 function _pmFit(pg){
+  if(pg.area){
+    // 지정 영역: 영역 전체가 보이게
+    const a=pg.area;
+    kakaoMap.setBounds(new kakao.maps.LatLngBounds(new kakao.maps.LatLng(a.minLat,a.minLng),new kakao.maps.LatLng(a.maxLat,a.maxLng)),30,30,30,30);
+    return;
+  }
   if(!pg.anchor){_centerMapOn(pg.pts);return;}
   const a=pg.anchor,dLat=a.r/111000,dLng=a.r/(111000*Math.cos(a.lat*Math.PI/180));
   kakaoMap.setBounds(new kakao.maps.LatLngBounds(new kakao.maps.LatLng(a.lat-dLat,a.lng-dLng),new kakao.maps.LatLng(a.lat+dLat,a.lng+dLng)),20,20,20,20);
@@ -142,6 +164,13 @@ function _pmDrawTiles(pg){
     const m=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(A.lat,A.lng),zIndex:70,yAnchor:.5,xAnchor:.5,
       content:`<div style="position:relative;width:44px;height:44px;border:4px solid #dc2626;border-radius:50%;box-sizing:border-box;pointer-events:none"><div style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#dc2626;color:#fff;font-weight:800;font-size:12px;padding:1px 7px;border-radius:9px">기준 ${esc(A.no)}</div></div>`});
     m.setMap(kakaoMap);_pmTileOverlays.push(m);
+  }
+  // 지정 영역: 영역 테두리(파란 점선)를 모든 장에 표시
+  const AR=pg.area||pg.parentRef?.area;
+  if(AR){
+    const r=new kakao.maps.Rectangle({bounds:new kakao.maps.LatLngBounds(new kakao.maps.LatLng(AR.minLat,AR.minLng),new kakao.maps.LatLng(AR.maxLat,AR.maxLng)),
+      strokeWeight:2,strokeColor:'#2563eb',strokeOpacity:.9,strokeStyle:'dash',fillOpacity:0});
+    r.setMap(kakaoMap);_pmTileOverlays.push(r);
   }
   if(!pg.split)return;
   pg.split.tiles.forEach((t,i)=>{
@@ -208,6 +237,28 @@ function _pmMakeTiles(base,level){
   const covered=new Set();tiles.forEach(t=>t.inside.forEach(d=>covered.add(d.id)));
   base.pts.filter(d=>!covered.has(d.id)).forEach(d=>tiles.push({lat:d.lat,lng:d.lng,hLat,hLng,inside:base.pts.filter(x=>Math.abs(x.lat-d.lat)<=hLat&&Math.abs(x.lng-d.lng)<=hLng)}));
   return tiles;
+}
+// 지정 영역(base.area)을 'level' 확대 단계에서 용지 한 장씩 덮도록 격자로 나눈다 (이웃 장과 8% 겹침).
+// 소화전이 있는 칸이 하나라도 있으면 소화전이 없는 칸은 건너뛴다. 영역 안에 소화전이 전혀 없으면 모든 칸을 인쇄. 너무 많으면 null.
+function _pmMakeAreaTiles(base,level){
+  _applyMapPaper(base.orient);
+  kakaoMap.relayout();
+  kakaoMap.setLevel(level);
+  const bd=kakaoMap.getBounds(),sw=bd.getSouthWest(),ne=bd.getNorthEast();
+  const tLat=ne.getLat()-sw.getLat(), tLng=ne.getLng()-sw.getLng();
+  const g=_areaGrid(base.area,tLat,tLng);
+  if(g.ny*g.nx>400)return null;
+  const hLat=tLat/2*0.97, hLng=tLng/2*0.97;
+  const all=g.centers.map(c=>({lat:c.lat,lng:c.lng,hLat,hLng,inside:base.pts.filter(d=>Math.abs(d.lat-c.lat)<=hLat&&Math.abs(d.lng-c.lng)<=hLng)}));
+  const filled=all.filter(t=>t.inside.length);
+  // 겹침 여유(3%) 때문에 어느 칸에도 안 들어간 소화전이 있으면 그 소화전을 중심으로 한 장 추가
+  const covered=new Set();filled.forEach(t=>t.inside.forEach(d=>covered.add(d.id)));
+  base.pts.forEach(d=>{
+    if(covered.has(d.id))return;
+    const t={lat:d.lat,lng:d.lng,hLat,hLng,inside:base.pts.filter(x=>Math.abs(x.lat-d.lat)<=hLat&&Math.abs(x.lng-d.lng)<=hLng)};
+    t.inside.forEach(x=>covered.add(x.id));filled.push(t);
+  });
+  return filled.length?{tiles:filled,skipped:all.length-all.filter(t=>t.inside.length).length}:{tiles:all,skipped:0};
 }
 function _pmTilePages(base,tiles,level){
   return tiles.map((t,i)=>({

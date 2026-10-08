@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/state.js — 전역 상태 변수 · hyState 통합 저장소 */
-AppFiles.reg('js/state.js','v3.0.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/state.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ State ══════════ */
 let kakaoMap=null,rvInstance=null,rvMinimapInst=null,rvOverlay=null,minimapOn=false;
