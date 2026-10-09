@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/gps.js — 현위치 · 정밀 GPS 보정 */
-AppFiles.reg('js/gps.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/gps.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 현위치 ══════════ */
 let _myLocMarker=null,_myLocCircle=null,_myLocWatch=null;

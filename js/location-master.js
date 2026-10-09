@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/location-master.js — 위치 원장 (hydmap_locations) */
-AppFiles.reg('js/location-master.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/location-master.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 위치 원장 (hydmap_locations) ══════════
    위치를 고치면 계획과 별개로 '시설번호 → 보정 위치'를 원장에 저장한다.

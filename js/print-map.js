@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print-map.js — 지도 인쇄 · 여러 장 나누기 · 미리보기 조작 */
-AppFiles.reg('js/print-map.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print-map.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ── 지도 인쇄 ──
 // 페이지(전체 범위 1장 또는 조별 여러 장)마다: 해당 소화전만 남기고 → 담당구역 중앙에 맞춰 확대 → 인쇄

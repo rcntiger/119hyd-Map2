@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/batch-fix.js — 일괄 위치수정 (PC 전용) */
-AppFiles.reg('js/batch-fix.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/batch-fix.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 일괄 위치수정 (PC 전용) ══════════
    현재 지도에 보이는(필터 적용된) 소화전을 끌어서 옮길 수 있는 마커로 바꾸고,
@@ -11,8 +11,8 @@ function _bfImg(color,moved){
   const k=color+(moved?'m':'');
   if(_bfImgCache[k])return _bfImgCache[k];
   const ring=moved?'#dc2626':'#ffffff';
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"><circle cx="11" cy="11" r="8" fill="${color}" stroke="${ring}" stroke-width="${moved?4:3}"/></svg>`;
-  return _bfImgCache[k]=new kakao.maps.MarkerImage('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),new kakao.maps.Size(22,22),{offset:new kakao.maps.Point(11,11)});
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><circle cx="9" cy="9" r="6.5" fill="${color}" stroke="${ring}" stroke-width="${moved?3.5:2.5}"/></svg>`;
+  return _bfImgCache[k]=new kakao.maps.MarkerImage('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),new kakao.maps.Size(18,18),{offset:new kakao.maps.Point(9,9)});
 }
 function toggleBatchFix(){
   if(_bf){

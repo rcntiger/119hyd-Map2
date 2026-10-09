@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/print.css — 지도 인쇄 모드 · 인쇄 미리보기 조작 바 */
-:root{--appver-print:"v3.2.2"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-print:"v3.2.3"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 지도 인쇄 모드 ──
    화면 자체를 "종이 한 장" 크기(A4 가로 인쇄면 283×194mm)로 고정한다.

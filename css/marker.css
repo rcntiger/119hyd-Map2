@@ -1,16 +1,16 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.2.2"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.2.3"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
 /* ═══ Marker ═══ */
-.kk-marker{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.6);cursor:pointer;transition:all .2s;background:#ef4444;display:flex;align-items:center;justify-content:center}
+.kk-marker{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.6);cursor:pointer;transition:all .2s;background:#ef4444;display:flex;align-items:center;justify-content:center}
 .kk-marker:hover{transform:scale(1.8)}
 /* 마커 툴팁 */
 .mk-tooltip{position:fixed;background:rgba(15,23,42,.92);color:#f1f5f9;font-size:15px;font-weight:600;padding:8px 16px;border-radius:10px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9999;opacity:0;transition:opacity .15s;transform:translateX(-50%)}
 .mk-tooltip::after{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-bottom-color:rgba(15,23,42,.92)}
-.kk-marker.done{background:#22c55e!important;width:14px!important;height:14px!important;box-shadow:0 2px 8px rgba(34,197,94,.6)!important}
-.kk-marker.active-mk{width:28px!important;height:28px!important;border:3px solid #fff!important;box-shadow:0 0 0 3px rgba(255,255,255,.5),0 3px 10px rgba(0,0,0,.7)!important}
+.kk-marker.done{background:#22c55e!important;width:12px!important;height:12px!important;box-shadow:0 2px 8px rgba(34,197,94,.6)!important}
+.kk-marker.active-mk{width:23px!important;height:23px!important;border:3px solid #fff!important;box-shadow:0 0 0 3px rgba(255,255,255,.5),0 3px 10px rgba(0,0,0,.7)!important}
 .kk-marker.g1{background:#3b82f6}.kk-marker.g2{background:#ef4444}.kk-marker.g3{background:#a78bfa}.kk-marker.g4{background:#06b6d4}.kk-marker.g5{background:#10b981}.kk-marker.g6{background:#ec4899}.kk-marker.g0{background:#7d8590}
 
 /* 팝업 */
@@ -90,7 +90,7 @@
 
 /* ── 같은 자리에 겹친 소화전 ── (js/overlap.js)
    개수 배지: 마커 요소의 data-cnt 값을 그대로 보여 준다 (마커 안쪽 아이콘을 다시 그려도 지워지지 않게 ::after 사용) */
-.kk-marker[data-cnt]::after{content:attr(data-cnt);position:absolute;top:-9px;right:-10px;min-width:16px;height:16px;padding:0 3px;box-sizing:border-box;border-radius:8px;background:#111827;color:#fff;border:1.5px solid #fff;font:800 10px/13px sans-serif;text-align:center;pointer-events:none}
+.kk-marker[data-cnt]::after{content:attr(data-cnt);position:absolute;top:-8px;right:-9px;min-width:14px;height:14px;padding:0 2px;box-sizing:border-box;border-radius:7px;background:#111827;color:#fff;border:1.5px solid #fff;font:800 9px/11px sans-serif;text-align:center;pointer-events:none}
 /* 겹친 마커를 눌렀을 때 뜨는 선택 창 */
 .ovl-chooser{background:#fff;border-radius:10px;padding:8px;min-width:200px;max-width:280px;max-height:50vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:sans-serif;margin-bottom:18px;position:relative;z-index:10001}
 .ovl-chooser-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#334155;padding:2px 4px 7px}

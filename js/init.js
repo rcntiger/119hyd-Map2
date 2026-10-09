@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/init.js — 시작 (DOMContentLoaded) · 키보드 */
-AppFiles.reg('js/init.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/init.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Init ══════════ */
 document.addEventListener('DOMContentLoaded',()=>{

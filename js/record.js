@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/record.js — 완료 토글 · 점검일 · 메모 */
-AppFiles.reg('js/record.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/record.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 완료 토글 ━━
 async function toggleDone(idx){

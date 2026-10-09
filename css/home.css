@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/home.css — 홈 화면 (계획 카드 · 세분계획 트리) */
-:root{--appver-home:"v3.2.2"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-home:"v3.2.3"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 홈 뷰 ── */
 #homeView{min-height:100vh;display:flex;flex-direction:column}
