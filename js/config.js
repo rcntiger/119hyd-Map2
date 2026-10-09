@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/config.js — 상수 — 키·주소는 common/keys.js(APP_KEYS)에서 읽음 */
-AppFiles.reg('js/config.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/config.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 상수 ━━
 // (APP_VERSION은 index.html 맨 위 한 곳에만 적는다 — 캐시 관리·파일 버전 확인에 함께 쓰임)

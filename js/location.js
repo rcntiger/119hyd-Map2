@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/location.js — 잘못된 위치 수정 · 좌표→주소 · 좌표 재검색 · 확인 핀 */
-AppFiles.reg('js/location.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/location.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // 좌표가 없는 개별 항목만 다시 지오코딩 시도
 // ━━ 잘못된 위치 수정 (지도를 클릭해 새 위치 지정) ━━
@@ -30,6 +30,7 @@ function startFixLocation(idx){
     showToast('📍 지도를 클릭하거나 우측 "현위치" 버튼을 누르세요','');
   }
   hyReRender(idx);
+  syncPlaceBar(); // 마커가 없는 소화전이면 지도 위 안내 줄을 띄우거나 내림
 }
 // 좌표 → 주소 역지오코딩 (지도를 클릭했을 때 그 지점의 주소를 함께 받아오기 위함)
 // 주소·장소 검색은 common/kakao-geo.js(KakaoGeo) 사용 — 지도 SDK services, REST 키 불필요
@@ -43,6 +44,7 @@ async function applyFixLocation(idx,latLng){
   const d=items[idx];if(!d)return;
   fixLocationIdx=-1;
   kakaoMap.setCursor('');
+  syncPlaceBar();
   const lat=latLng.getLat(),lng=latLng.getLng();
   try{
     showToast('주소 확인 중...','');
@@ -75,6 +77,7 @@ async function applyFixLocation(idx,latLng){
     hyReRender(idx);
     updateListItem(idx);
     setOtherMarkersHidden(idx,false);
+    ovlRecompute(); // 위치가 바뀌었으니 겹침 묶음을 다시 계산
     showToast(addr?'✅ 위치·주소가 함께 수정되었습니다':'✅ 위치가 수정되었습니다 (주소 확인 실패)','ok');
   }catch(e){
     setOtherMarkersHidden(idx,false);
@@ -93,6 +96,7 @@ async function retryGeocodeItem(idx){
     addMarker(idx,d);
     if(clusterer)clusterer.redraw();
     updateListItem(idx);
+    ovlRecompute();
     showToast('✅ 좌표를 찾았습니다','ok');
   }catch(e){showToast('재검색 실패: '+(e?.message||''),'err');}
 }

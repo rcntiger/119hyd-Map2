@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/auth.js — 관리자 로그인 · 점검자/점검일자 */
-AppFiles.reg('js/auth.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/auth.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 관리자 로그인 (Supabase Auth) ══════════
    로그인 세션은 SupabaseUtil의 같은 클라이언트에 붙으므로, 이후 모든 DB 요청이 관리자 권한으로 나간다.

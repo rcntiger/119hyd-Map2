@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.1.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.2.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
@@ -87,3 +87,19 @@
 .iw-photos:has(.iw-photo-thumb) .iw-photo-add{aspect-ratio:1;height:auto;padding:0;flex-direction:column;font-size:9px;gap:1px}
 .iw-photo-add:hover{border-color:#3b82f6;color:#3b82f6;background:#f0f9ff}
 .iw-photo-add span:first-child{font-size:14px}
+
+/* ── 같은 자리에 겹친 소화전 ── (js/overlap.js)
+   개수 배지: 마커 요소의 data-cnt 값을 그대로 보여 준다 (마커 안쪽 아이콘을 다시 그려도 지워지지 않게 ::after 사용) */
+.kk-marker[data-cnt]::after{content:attr(data-cnt);position:absolute;top:-9px;right:-10px;min-width:16px;height:16px;padding:0 3px;box-sizing:border-box;border-radius:8px;background:#111827;color:#fff;border:1.5px solid #fff;font:800 10px/13px sans-serif;text-align:center;pointer-events:none}
+/* 겹친 마커를 눌렀을 때 뜨는 선택 창 */
+.ovl-chooser{background:#fff;border-radius:10px;padding:8px;min-width:200px;max-width:280px;max-height:50vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:sans-serif;margin-bottom:18px;position:relative;z-index:10001}
+.ovl-chooser-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#334155;padding:2px 4px 7px}
+.ovl-chooser-head b{color:#dc2626}
+.ovl-chooser-x{cursor:pointer;color:#94a3b8;font-size:14px;padding:0 4px}
+.ovl-chooser-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;padding:9px 8px;margin-top:4px;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;cursor:pointer;text-align:left;font-size:13px;color:#0f172a}
+.ovl-chooser-row:hover{border-color:#2563eb;background:#eff6ff}
+.ovl-chooser-row i{width:10px;height:10px;border-radius:50%;flex:none}
+.ovl-chooser-row .nm{font-weight:800}
+.ovl-chooser-row .tg{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:#e2e8f0;color:#475569}
+.ovl-chooser-row .tg.dn{background:#dcfce7;color:#15803d}
+.ovl-chooser-foot{font-size:10.5px;color:#94a3b8;padding:7px 4px 1px;line-height:1.4}

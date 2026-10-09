@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){
@@ -19,7 +19,7 @@ function buildListItem(i){
   const color=groupColor(d);
   const noCoord=!(d.lat&&d.lng);
   const div=document.createElement('div');
-  div.className='item'+(isHidden(d)?' hidden':'')+(isDone?' done-item':'');
+  div.className='item'+(isListHidden(d)?' hidden':'')+(isDone?' done-item':'');
   div.id=`item-${i}`;
   div.innerHTML=`${pickMode?`<input type="checkbox" class="pick-chk" data-id="${d.id}" ${pickedIds.has(d.id)?'checked':''} onclick="event.stopPropagation();togglePicked(${d.id})">`:''}<div class="team-dot" style="background:${noCoord?'#94a3b8':color}"></div>
     <div class="ibody">
@@ -31,13 +31,15 @@ function buildListItem(i){
         ${isDone?'<span class="itag done-tag">✓ 완료</span>':''}
         ${memoMap[d.id]?'<span class="itag">📝 메모</span>':''}
         ${(photoMap[d.id]?.length)?`<span class="itag">📷 ${photoMap[d.id].length}</span>`:''}
-        ${noCoord?`<span class="itag" style="background:#fee2e2;color:#dc2626">📍 좌표없음</span><button class="itag" style="background:#e0e7ff;color:#4338ca;cursor:pointer;border:none" onclick="event.stopPropagation();retryGeocodeItem(${i})">🔄 재시도</button>`:''}
+        ${noCoord?`<span class="itag" style="background:#fee2e2;color:#dc2626">📍 좌표없음</span>${d.address?`<button class="itag" style="background:#e0e7ff;color:#4338ca;cursor:pointer;border:none" onclick="event.stopPropagation();retryGeocodeItem(${i})" title="주소로 좌표를 다시 찾기">🔄 재시도</button>`:''}<button class="itag" style="background:#dbeafe;color:#1d4ed8;cursor:pointer;border:none" onclick="event.stopPropagation();startPlaceLocation(${i})" title="지도를 누르거나 현위치(GPS)로 위치 지정">📍 위치 지정</button>`:''}
+        ${_ovl.of[i]?'<span class="itag" style="background:#e5e7eb;color:#111827" title="다른 소화전과 같은 자리에 찍혀 있음 (3m 이내)">⧉ 겹침</span>':''}
       </div>
     </div>`;
   div.addEventListener('click',()=>{
     if(pickMode){togglePicked(d.id);return;} // 선택 모드에서는 카드 클릭도 체크 토글로 동작
     setActive(i);
-    if(!(d.lat&&d.lng)){showToast('이 항목은 주소 좌표를 찾을 수 없어 지도에서 위치를 표시할 수 없습니다','err');return;}
+    if(!(d.lat&&d.lng)){ncOpenCard(i);return;} // 좌표가 없어 마커가 없는 항목: 화면 가운데에 정보카드를 띄움
+    ovlCloseChooser();
     const isMobile=window.innerWidth<=600;
     const doPan=()=>{
       if(d.lat&&d.lng&&kakaoMap){

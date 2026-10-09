@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -66,7 +66,8 @@ function updateGroupCounts(){
     opt.textContent=`${opt.value} (${cnt})`;
   });
 }
-function isHidden(d){
+// 그룹·팀·검색·선택 표시만 본 숨김 여부 ('겹친 위치만 보기'는 뺀 것) — 겹침 묶음에서 보이는 개수를 셀 때 이 기준을 쓴다
+function _baseHidden(d){
   const g=String(d.group_name||'').trim();
   // 팀 모드: 팀 밖 소화전은 항상 숨김 (필터 전환과 무관하게 팀 범위 밖으로 못 나감)
   if(teamFilterPrefix&&!(g===teamFilterPrefix||g.startsWith(teamFilterPrefix+' ')))return true;
@@ -75,6 +76,18 @@ function isHidden(d){
   if(filterGroupVal&&g!==String(filterGroupVal).trim())return true;
   if(filterText&&!d.name.toLowerCase().includes(filterText.toLowerCase())&&!(d.address||'').toLowerCase().includes(filterText.toLowerCase()))return true;
   return false;
+}
+// 지도·목록 공통 숨김 여부
+function isHidden(d){
+  if(_baseHidden(d))return true;
+  // 모아 보기 '겹친 위치만': 선택 표시(인쇄 미리보기 포함) 중에는 적용하지 않음
+  if(quickFilter==='overlap'&&!pickedFilterActive&&!ovlInStack(d))return true;
+  return false;
+}
+// 목록에서만 쓰는 숨김 여부. 모아 보기 '좌표없음만'은 목록만 거른다
+// (지도는 그대로 두어야, 위치를 지정했을 때 새로 생긴 마커가 바로 보인다)
+function isListHidden(d){
+  return isHidden(d)||(quickFilter==='nocoord'&&!pickedFilterActive&&!!(d.lat&&d.lng));
 }
 let sortMode='';
 function setSort(mode){
@@ -145,11 +158,15 @@ function _ovSet(ov,on){
 }
 function applyFilter(){
   filterText=document.getElementById('searchInput').value.trim();
+  ovlRefresh(); // 겹침 묶음에서 지금 범위에 보이는 개수·배지·이름표 갱신 (아래 isHidden이 이 결과를 씀)
+  // 모아 보기 대상이 하나도 안 남으면(전부 위치를 지정했거나 겹침을 다 풀었으면) 저절로 해제
+  if((quickFilter==='nocoord'&&!ncCount())||(quickFilter==='overlap'&&!ovlStackCount().groups))quickFilter='';
   const toAdd=[],toRemove=[];
   items.forEach((d,i)=>{
     const hide=isHidden(d);
     const li=document.getElementById(`item-${i}`);
-    if(li&&li.classList.contains('hidden')!==hide)li.classList.toggle('hidden',hide);
+    const liHide=isListHidden(d);
+    if(li&&li.classList.contains('hidden')!==liHide)li.classList.toggle('hidden',liHide);
     const o=overlays[i];
     if(o){
       const inBf=_bf&&_bf.marks.has(d.id); // 일괄 위치수정 중인 마커는 원래 마커를 숨긴 채 유지
@@ -170,7 +187,7 @@ function applyFilter(){
     if(toAdd.length)clusterer.addMarkers(toAdd,true);
     clusterer.redraw();
   }
-  updateStats();updateGroupCounts();
+  updateStats();updateGroupCounts();updateQuickChips();
 }
 
 // ━━ 통계 ━━

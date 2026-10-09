@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/geocode.js — 주소 → 좌표 (KakaoGeo · Nominatim) */
-AppFiles.reg('js/geocode.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/geocode.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // 주소에 시/도/구 등 지역명이 포함되어 있는지 확인
 function addrHasRegion(addr){

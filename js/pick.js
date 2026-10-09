@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/pick.js — 개별 선택 후 지도에 표시 · 조 재배정 */
-AppFiles.reg('js/pick.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/pick.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 개별 선택 후 지도에 표시 ━━
 function togglePickMode(){
@@ -28,7 +28,7 @@ function updatePickCount(){
 // 예: 검색창에 "지상식"을 검색하거나 그룹 필터로 "1조"를 고른 뒤 이 버튼을 누르면 그 결과 전체가 선택됨.
 function pickSelectAllVisible(){
   let n=0;
-  items.forEach(d=>{if(!isHidden(d)&&!pickedIds.has(d.id)){pickedIds.add(d.id);n++;}});
+  items.forEach(d=>{if(!isListHidden(d)&&!pickedIds.has(d.id)){pickedIds.add(d.id);n++;}});
   updatePickCount();
   renderList();
   if(n)showToast(`${n}개 추가로 선택됨 (총 ${pickedIds.size}개)`,'ok');

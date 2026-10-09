@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/overlay.css — 화면 위에 뜨는 것: 사진 뷰어 · 진단 패널 · 진행 막대 · 사진 바텀시트 (+ 로드뷰 버튼) */
-:root{--appver-overlay:"v3.1.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-overlay:"v3.2.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 .iw-rv-btn{width:100%;padding:6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;background:#f8fafc;color:#334155;margin-bottom:4px}
 
@@ -31,3 +31,11 @@
 .photo-sheet-btn .ps-icon{font-size:22px;width:30px;text-align:center}
 .photo-sheet-cancel{width:100%;padding:12px;border:none;border-radius:10px;background:var(--sur3);color:var(--mt);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px}
 .photo-sheet-cancel:hover{color:var(--tx)}
+
+/* ── 좌표 없는 소화전: 지도 없이 화면 가운데에 띄우는 정보카드 ── (js/nocoord.js)
+   사진 바텀시트(9990)·사진 뷰어(9999)·모달(20000)보다 아래에 둔다 (카드에서 그것들을 열 수 있어야 하므로) */
+.nc-card-bg{display:none;position:fixed;inset:0;z-index:9989;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:12px}
+.nc-card-bg.open{display:flex}
+.nc-card-box{display:flex;flex-direction:column;gap:6px;max-width:min(340px,94vw);max-height:92vh}
+.nc-card-note{background:#fef3c7;color:#92400e;font-size:11.5px;font-weight:600;line-height:1.45;padding:7px 10px;border-radius:8px}
+.nc-card-box .iw-wrap{max-width:none;max-height:78vh}

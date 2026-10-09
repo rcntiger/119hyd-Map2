@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -56,6 +56,10 @@ function clearMapOverlays(){
   Object.values(overlays).forEach(o=>{o.overlay?.setMap(null);o.iw?.setMap(null);o.labelOverlay?.setMap(null);});
   if(clusterer)clusterer.clear();
   overlays={};
+  _ovl={groups:[],of:{}}; // 겹침 묶음도 비움 (마커를 다시 그린 뒤 ovlCompute가 새로 계산)
+  // 위치 수정/지정 모드였다면 해제 (마커를 새로 그리면 '다른 마커 숨김' 상태가 사라지므로 모드만 남으면 안 됨)
+  if(fixLocationIdx>=0){fixLocationIdx=-1;if(kakaoMap)kakaoMap.setCursor('');}
+  syncPlaceBar();
 }
 let _clBatch=null;
 function renderAllMarkers(){
@@ -65,6 +69,7 @@ function renderAllMarkers(){
   if(clusterer&&_clBatch.length)clusterer.addMarkers(_clBatch,true);
   _clBatch=null;
   if(clusterer)clusterer.redraw();
+  ovlCompute(); // 같은 자리에 겹친 소화전 묶음 계산 (배지·이름표는 이어지는 applyFilter가 맞춤)
 }
 let _transparentMarkerImg=null;
 function getTransparentMarkerImage(){
@@ -105,7 +110,7 @@ function addMarker(idx,d){
   el.addEventListener('mouseenter',()=>{
     if(!tooltipOn||iwOpen===iw)return;
     const r=el.getBoundingClientRect();
-    _sharedTooltip.textContent=d.name;
+    _sharedTooltip.textContent=ovlTipText(idx)||d.name;
     _sharedTooltip.style.left=(r.left+r.width/2)+'px';
     _sharedTooltip.style.top=(r.bottom+6)+'px';
     _sharedTooltip.style.opacity='1';
@@ -116,11 +121,13 @@ function addMarker(idx,d){
   const _labelColor=groupColor(d);
   const labelEl=document.createElement('div');
   labelEl.style.cssText=`padding:3px 8px;font-size:11px;font-weight:700;color:${_labelColor};background:rgba(255,255,255,0.95);border:1.5px solid ${_labelColor};border-radius:12px;white-space:normal;max-width:120px;word-break:keep-all;text-align:center;line-height:1.4;box-shadow:0 2px 6px rgba(0,0,0,.2);pointer-events:auto;cursor:pointer;margin-top:16px`;
-  labelEl.addEventListener('click',e=>{e.stopPropagation();openIw();});
+  // 누르면: 겹친 자리면 그 자리 소화전 목록(ovlTap), 아니면 바로 정보카드
+  const tap=()=>{if(!ovlTap(idx))openIw();};
+  labelEl.addEventListener('click',e=>{e.stopPropagation();tap();});
   let _lbTouchMoved=false;
   labelEl.addEventListener('touchstart',()=>{_lbTouchMoved=false;},{passive:true});
   labelEl.addEventListener('touchmove',()=>{_lbTouchMoved=true;},{passive:true});
-  labelEl.addEventListener('touchend',e=>{e.stopPropagation();if(!_lbTouchMoved){e.preventDefault();openIw();}},{passive:false});
+  labelEl.addEventListener('touchend',e=>{e.stopPropagation();if(!_lbTouchMoved){e.preventDefault();tap();}},{passive:false});
   labelEl.textContent=d.name;
   const labelOverlay=new kakao.maps.CustomOverlay({
     position:new kakao.maps.LatLng(d.lat,d.lng),
@@ -168,12 +175,12 @@ function addMarker(idx,d){
     iw.setMap(kakaoMap);iwOpen=iw;
     setActive(idx);panToForCard(d.lat,d.lng);
   }
-  el.addEventListener('click',e=>{e.stopPropagation();openIw();});
+  el.addEventListener('click',e=>{e.stopPropagation();tap();});
   // 모바일: CustomOverlay 내부에서 click이 누락되는 경우가 있어 touchend로 보완
   let _touchMoved=false,_tipTimer=null;
   el.addEventListener('touchstart',()=>{_touchMoved=false;},{passive:true});
   el.addEventListener('touchmove',()=>{_touchMoved=true;},{passive:true});
-  el.addEventListener('touchend',e=>{e.stopPropagation();if(!_touchMoved){e.preventDefault();openIw();}},{passive:false});
+  el.addEventListener('touchend',e=>{e.stopPropagation();if(!_touchMoved){e.preventDefault();tap();}},{passive:false});
   const overlay=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,zIndex:10});
   // 성능: 처음부터 필터 상태대로 만든다. 예전엔 848개를 전부 지도에 올린 뒤 applyFilter가 800개를 다시 내려서
   //       조 카드로 들어갈 때마다 DOM 추가·삭제가 두 번씩 일어나 초기화가 느렸다.
@@ -185,7 +192,7 @@ function addMarker(idx,d){
   const clMarker=new kakao.maps.Marker({position:new kakao.maps.LatLng(d.lat,d.lng),image:getTransparentMarkerImage()});
   // 클러스터러에는 보이는 것만, 그리고 renderAllMarkers에서 한 번에 넣는다 (_clBatch)
   if(clusterer&&!hideNow){if(_clBatch)_clBatch.push(clMarker);else{clusterer.addMarker(clMarker);}}
-  overlays[idx]={overlay,iw,clMarker,labelOverlay,hidden:hideNow,popupRendered:false};
+  overlays[idx]={overlay,iw,clMarker,labelOverlay,hidden:hideNow,popupRendered:false,open:openIw}; // open: 겹침 선택 창에서 이 카드 열기
 }
 // 팝업이 아직 한 번도 렌더링되지 않았으면 지금 렌더링하고 표시해둔다 (idempotent)
 function ensurePopupRendered(idx){
@@ -236,13 +243,13 @@ function renderPopup(iwEl,idx,d,iw){
       <div class="iw-name">${esc(d.name)}</div>
       <div class="iw-name-btns">
         <button class="iw-rv-inline" onclick="showHistory(${idx})" title="이 소화전의 위치·점검 변경 기록">📜 이력</button>
-        <button class="iw-rv-inline" onclick="printFromHydrant(${idx})" title="이 소화전을 중심으로 주변 소화전 인쇄">🖨 기준 인쇄</button>
+        ${d.lat&&d.lng?`<button class="iw-rv-inline" onclick="printFromHydrant(${idx})" title="이 소화전을 중심으로 주변 소화전 인쇄">🖨 기준 인쇄</button>`:''}
       </div>
     </div>
     ${d.address?`<div class="iw-addr-row"><span class="iw-addr iw-addr-full">📍 ${esc((d.address||'').replace(/^서울특별시\s*/,''))}</span></div>`:''}
     <div class="iw-latlng-row">🧭 위도 ${d.lat?d.lat.toFixed(6):'-'}, 경도 ${d.lng?d.lng.toFixed(6):'-'}${d.loc_fixed_at?` <span class="iw-locfixed-badge">📍 ${(dt=>`${String(dt.getFullYear()).slice(-2)}.${dt.getMonth()+1}.${dt.getDate()}`)(new Date(d.loc_fixed_at))} 수정</span>`:''}</div>
     <div class="hy-fixloc-row">
-      <button class="hy-fixloc-btn" onclick="startFixLocation(${idx})">📍 위치 수정</button>
+      ${d.lat&&d.lng?`<button class="hy-fixloc-btn" onclick="startFixLocation(${idx})">📍 위치 수정</button>`:`<button class="hy-fixloc-btn" onclick="startPlaceLocation(${idx})">📍 위치 지정 (지도에서 누르기 · 현위치)</button>`}
       ${d.lat&&d.lng?`<button class="hy-fixloc-btn hy-rv-btn" onclick="openRvFromPopup(new kakao.maps.LatLng(${d.lat},${d.lng}))">🔭 로드뷰</button>`:''}
     </div>
     ${extraStr?`<div class="iw-extra">${esc(extraStr)}</div>`:''}

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/photo.js — 사진: 썸네일 · 압축 · Cloudinary 업로드 · 뷰어 · 바텀시트 */
-AppFiles.reg('js/photo.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/photo.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Photo Grid ══════════ */
 function renderPhotoGrid(idx,photos){

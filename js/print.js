@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print.js — 인쇄: 범위 선택 · 점검 목록표 */
-AppFiles.reg('js/print.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 (전체 / 팀 / 조) ══════════ */
 // 범위 값: 'all' | 'team:1팀' | 'jo:1팀 2조'

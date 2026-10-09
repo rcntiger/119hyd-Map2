@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/print.css — 지도 인쇄 모드 · 인쇄 미리보기 조작 바 */
-:root{--appver-print:"v3.1.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-print:"v3.2.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 지도 인쇄 모드 ──
    화면 자체를 "종이 한 장" 크기(A4 가로 인쇄면 283×194mm)로 고정한다.
@@ -8,7 +8,7 @@
 #printMapTitle,#printBar{display:none}
 
 html.printing-map,html.printing-map body{background:#525659!important;overflow:auto!important}
-html.printing-map #mapHeader,html.printing-map .sidebar,html.printing-map .map-toolbar,html.printing-map .map-toolbar-top,html.printing-map .map-search,html.printing-map #mapSearchResults,html.printing-map .dist-info,html.printing-map #areaBar,html.printing-map #areaLayer,html.printing-map #toast,html.printing-map .mob-toggle{display:none!important}
+html.printing-map #mapHeader,html.printing-map .sidebar,html.printing-map .map-toolbar,html.printing-map .map-toolbar-top,html.printing-map .map-search,html.printing-map #mapSearchResults,html.printing-map .dist-info,html.printing-map #areaBar,html.printing-map #placeBar,html.printing-map #areaLayer,html.printing-map #toast,html.printing-map .mob-toggle{display:none!important}
 html.printing-map #mapView{display:block!important;height:auto!important}
 html.printing-map .layout{display:block!important;height:auto!important;overflow:visible!important}
 html.printing-map .map-wrap{display:block!important;position:relative!important;flex:none!important;width:var(--print-w,283mm)!important;height:var(--print-h,194mm)!important;min-height:0!important;margin:0 auto 90px!important;background:#fff}

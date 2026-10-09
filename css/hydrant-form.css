@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/hydrant-form.css — 정보카드 안의 소화전 점검 입력 */
-:root{--appver-hydrant-form:"v3.1.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-hydrant-form:"v3.2.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 소화전 점검 입력 카드 ── */
 .hy-status-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin:2px 0 8px}

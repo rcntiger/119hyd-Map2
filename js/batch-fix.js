@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/batch-fix.js — 일괄 위치수정 (PC 전용) */
-AppFiles.reg('js/batch-fix.js','v3.1.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/batch-fix.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 일괄 위치수정 (PC 전용) ══════════
    현재 지도에 보이는(필터 적용된) 소화전을 끌어서 옮길 수 있는 마커로 바꾸고,
@@ -25,7 +25,7 @@ function toggleBatchFix(){
   if(!targets.length){showToast('지도에 표시된 소화전이 없습니다','err');return;}
   if(targets.length>400&&!confirm(`${targets.length}개 소화전을 편집 마커로 바꿉니다. 조나 팀으로 범위를 좁히면 더 가볍습니다. 계속할까요?`))return;
   closeIw();
-  if(fixLocationIdx>=0){fixLocationIdx=-1;kakaoMap.setCursor('');}
+  if(fixLocationIdx>=0){fixLocationIdx=-1;kakaoMap.setCursor('');syncPlaceBar();}
   _bf={marks:new Map(),changed:new Set()};
   targets.forEach(({d,i})=>{
     const o=overlays[i];
@@ -121,5 +121,6 @@ async function saveBatchFix(){
     _bfCount();
   }
   if(clusterer)clusterer.redraw();
+  if(ok)ovlRecompute(); // 옮긴 결과로 겹침 묶음을 다시 계산
   showToast(`✅ ${ok}개 저장${fail?` · 실패 ${fail}개(다시 저장하세요)`:''}${addrFail?` · 주소 확인 실패 ${addrFail}개(위치만 저장)`:''}`,fail?'err':'ok');
 }
