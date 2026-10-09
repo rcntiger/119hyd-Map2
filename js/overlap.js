@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/overlap.js — 같은 자리에 겹친 소화전: 묶음 계산 · 개수 배지 · 이름표 묶기 · 눌러서 고르기 */
-AppFiles.reg('js/overlap.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/overlap.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 겹친 소화전 ══════════
    엑셀 좌표가 주소 기준이라, 한 건물·한 지번에 소화전이 여럿이면 전부 같은 점에 찍힌다.
@@ -12,7 +12,7 @@ const OVL_M=3;
 // groups: [{members:[idx…] 이름순, vis:[idx…] 지금 화면 범위(조·팀·검색)에 드는 것}], of: idx → 묶음
 let _ovl={groups:[],of:{}};
 
-function _ovlOwnLabel(i,printing){return printing?_shortNo(items[i].name):items[i].name;}
+function _ovlOwnLabel(i,printing){return labelText(items[i]);} // 화면·인쇄 모두 번호만
 // 겹친 자리의 이름표 글자: 번호를 한 줄에 하나씩 모두 적는다 (종이에서는 눌러 볼 수 없으므로 번호가 다 보여야 함).
 // 너무 길어지지 않게 OVL_LABEL_MAX줄까지만 — 넘으면 마지막 줄을 "외 N"으로.
 const OVL_LABEL_MAX=6;
@@ -31,7 +31,7 @@ function ovlCompute(){
     const mk=o.overlay?.getContent&&o.overlay.getContent();
     if(mk&&mk.dataset)delete mk.dataset.cnt;
     const lb=o.labelOverlay?.getContent&&o.labelOverlay.getContent();
-    if(lb){lb.textContent=items[i].name;lb.style.whiteSpace='normal';}
+    if(lb){lb.textContent=labelText(items[i]);lb.style.whiteSpace='normal';}
   }));
   ovlCloseChooser();
   const pts=[];
@@ -92,8 +92,8 @@ function ovlRefresh(){
         let t,multi=false;
         if(_bf&&_bf.marks.has(items[i].id)){
           // 일괄 위치수정 중: 아직 이 자리에 남은 번호만 적고, 지금 잡히는(맨 위) 번호 앞에 ▶
-          if(here.length>=2&&here.includes(i)){t=here.map(j=>(j===top?'▶ ':'')+items[j].name).join('\n');multi=true;}
-          else t=items[i].name; // 옮긴 것·혼자 남은 것은 자기 번호만
+          if(here.length>=2&&here.includes(i)){t=here.map(j=>(j===top?'▶ ':'')+labelText(items[j])).join('\n');multi=true;}
+          else t=labelText(items[i]); // 옮긴 것·혼자 남은 것은 자기 번호만
         }else if(fixLocationIdx===i){
           t=_ovlOwnLabel(i,printing); // 위치 수정 중인 것은 자기 번호만 (다른 마커는 숨겨져 있음)
         }else{

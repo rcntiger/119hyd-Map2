@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.2.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -97,6 +97,8 @@ function updateMarkerIcon(idx){
   const el=o.overlay.getContent&&o.overlay.getContent();
   if(el)el.innerHTML=getMarkerIconHtml(d);
 }
+// 이름표에 적는 글자: 앞의 지역명('금천-')을 떼고 번호만 (화면·인쇄 공통). 번호 형식이 아니면 이름 그대로.
+function labelText(d){return _shortNo(d.name);}
 function addMarker(idx,d){
   const isDone=!!doneMap[d.id];
   const color=groupColor(d);
@@ -128,7 +130,7 @@ function addMarker(idx,d){
   labelEl.addEventListener('touchstart',()=>{_lbTouchMoved=false;},{passive:true});
   labelEl.addEventListener('touchmove',()=>{_lbTouchMoved=true;},{passive:true});
   labelEl.addEventListener('touchend',e=>{e.stopPropagation();if(!_lbTouchMoved){e.preventDefault();tap();}},{passive:false});
-  labelEl.textContent=d.name;
+  labelEl.textContent=labelText(d);
   const labelOverlay=new kakao.maps.CustomOverlay({
     position:new kakao.maps.LatLng(d.lat,d.lng),
     content:labelEl,

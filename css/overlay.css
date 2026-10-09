@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/overlay.css — 화면 위에 뜨는 것: 사진 뷰어 · 진단 패널 · 진행 막대 · 사진 바텀시트 (+ 로드뷰 버튼) */
-:root{--appver-overlay:"v3.2.3"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-overlay:"v3.2.4"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 .iw-rv-btn{width:100%;padding:6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;background:#f8fafc;color:#334155;margin-bottom:4px}
 
