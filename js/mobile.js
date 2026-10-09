@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/mobile.js — 모바일 지도/목록 전환 */
-AppFiles.reg('js/mobile.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/mobile.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 모바일 ━━
 // 모바일 "지도보기" 모드에서는 상단 헤더(뒤로/점검자/날짜/엑셀업로드 바)를 숨겨서

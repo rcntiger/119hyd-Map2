@@ -1,11 +1,11 @@
 /* 119hyd-Map2 · js/overlap.js — 같은 자리에 겹친 소화전: 묶음 계산 · 개수 배지 · 이름표 묶기 · 눌러서 고르기 */
-AppFiles.reg('js/overlap.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/overlap.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 겹친 소화전 ══════════
    엑셀 좌표가 주소 기준이라, 한 건물·한 지번에 소화전이 여럿이면 전부 같은 점에 찍힌다.
    그러면 마커가 정확히 포개져 맨 위 하나만 보이고 눌린다 (아무리 확대해도 벌어지지 않음).
    → 서로 OVL_M(3m) 이내인 소화전을 한 묶음으로 보고
-     ① 마커에 개수 배지  ② 이름표는 "○○ 외 2"  ③ 마커를 누르면 그 자리 소화전 목록에서 고르기
+     ① 마커에 개수 배지  ② 이름표에 그 자리의 번호를 한 줄에 하나씩 모두 적음  ③ 마커를 누르면 그 자리 소화전 목록에서 고르기
    마커 위치는 건드리지 않는다 (실제와 다른 곳에 찍히면 지번 단계 인쇄물에서 엉뚱한 집 앞으로 보이므로).
    근본 해결은 위치 수정으로 각자 실제 자리에 옮기는 것. */
 const OVL_M=3;
@@ -13,6 +13,14 @@ const OVL_M=3;
 let _ovl={groups:[],of:{}};
 
 function _ovlOwnLabel(i,printing){return printing?_shortNo(items[i].name):items[i].name;}
+// 겹친 자리의 이름표 글자: 번호를 한 줄에 하나씩 모두 적는다 (종이에서는 눌러 볼 수 없으므로 번호가 다 보여야 함).
+// 너무 길어지지 않게 OVL_LABEL_MAX줄까지만 — 넘으면 마지막 줄을 "외 N"으로.
+const OVL_LABEL_MAX=6;
+function _ovlStackLabel(vis,printing){
+  const names=vis.map(i=>_ovlOwnLabel(i,printing));
+  if(names.length<=OVL_LABEL_MAX)return names.join('\n');
+  return names.slice(0,OVL_LABEL_MAX-1).join('\n')+`\n외 ${names.length-(OVL_LABEL_MAX-1)}`;
+}
 // 좌표가 바뀌는 곳(불러오기·위치 수정·좌표 재검색·일괄 위치수정 저장)에서 부른다. 묶음을 처음부터 다시 계산.
 function ovlCompute(){
   // 예전 묶음의 표시(배지·묶은 이름표)를 먼저 지움 — 묶음에서 빠진 마커에 남지 않도록
@@ -23,7 +31,7 @@ function ovlCompute(){
     const mk=o.overlay?.getContent&&o.overlay.getContent();
     if(mk&&mk.dataset)delete mk.dataset.cnt;
     const lb=o.labelOverlay?.getContent&&o.labelOverlay.getContent();
-    if(lb)lb.textContent=items[i].name;
+    if(lb){lb.textContent=items[i].name;lb.style.whiteSpace='normal';}
   }));
   ovlCloseChooser();
   const pts=[];
@@ -65,19 +73,55 @@ function ovlRefresh(){
   _ovl.groups.forEach(g=>{
     g.vis=g.members.filter(i=>items[i]&&!_baseHidden(items[i]));
     const n=g.vis.length;
+    // 일괄 위치수정 중: 이 자리에 남은 것(here)과 그중 맨 위(top)를 정하고, 편집 마커의 쌓이는 순서를 거기에 맞춤
+    let here=[],top=-1;
+    if(_bf){
+      here=_ovlHere(g);
+      top=here.includes(g.bfTop)?g.bfTop:(here.length?here[0]:-1);
+      g.bfTop=top;
+      here.forEach(j=>{const m=_bf.marks.get(items[j].id)?.marker;if(m&&m.setZIndex)m.setZIndex(j===top?7:5);});
+    }
     g.members.forEach(i=>{
       const o=overlays[i];if(!o||!items[i])return;
       const stacked=n>=2&&g.vis.includes(i);
       const mk=o.overlay?.getContent&&o.overlay.getContent();
       if(mk&&mk.dataset){if(stacked)mk.dataset.cnt=n;else delete mk.dataset.cnt;}
-      // 이름표: 겹친 것끼리는 모두 같은 글자("첫 번호 외 n-1")를 보여, 어느 것이 맨 위에 그려져도 같게
+      // 이름표: 겹친 것끼리는 모두 같은 글자(그 자리의 번호 전부)를 보여, 어느 것이 맨 위에 그려져도 같게
       const lb=o.labelOverlay?.getContent&&o.labelOverlay.getContent();
       if(lb){
-        const t=stacked?`${_ovlOwnLabel(g.vis[0],printing)} 외 ${n-1}`:_ovlOwnLabel(i,printing);
+        let t,multi=false;
+        if(_bf&&_bf.marks.has(items[i].id)){
+          // 일괄 위치수정 중: 아직 이 자리에 남은 번호만 적고, 지금 잡히는(맨 위) 번호 앞에 ▶
+          if(here.length>=2&&here.includes(i)){t=here.map(j=>(j===top?'▶ ':'')+items[j].name).join('\n');multi=true;}
+          else t=items[i].name; // 옮긴 것·혼자 남은 것은 자기 번호만
+        }else if(fixLocationIdx===i){
+          t=_ovlOwnLabel(i,printing); // 위치 수정 중인 것은 자기 번호만 (다른 마커는 숨겨져 있음)
+        }else{
+          multi=stacked;
+          t=stacked?_ovlStackLabel(g.vis,printing):_ovlOwnLabel(i,printing);
+        }
         if(lb.textContent!==t)lb.textContent=t;
+        const ws=multi?'pre-line':'normal'; // pre-line: 줄바꿈 글자를 실제 줄바꿈으로
+        if(lb.style.whiteSpace!==ws)lb.style.whiteSpace=ws;
       }
     });
   });
+}
+/* ── 일괄 위치수정 중의 겹친 자리 ── (batch-fix.js가 부른다) */
+// 이 묶음에서 아직 원래 자리에 남아 있는 편집 마커들 (옮겼거나 지금 끌고 있는 것은 뺌)
+function _ovlHere(g){
+  return g.vis.filter(i=>{const d=items[i];return _bf.marks.has(d.id)&&!_bf.changed.has(d.id)&&_bf.dragId!==d.id;});
+}
+// 겹친 편집 마커를 눌렀을 때: 다음 번호를 맨 위로 올린다 (끌면 그 번호가 잡힘)
+function ovlBfCycle(idx){
+  if(!_bf)return;
+  const g=_ovl.of[idx];if(!g)return;
+  const here=_ovlHere(g);
+  if(here.length<2)return;
+  const cur=here.includes(g.bfTop)?g.bfTop:here[0];
+  g.bfTop=here[(here.indexOf(cur)+1)%here.length];
+  ovlRefresh();
+  _bfInfo(`▶ ${items[g.bfTop].name} 을(를) 잡습니다 (${here.indexOf(g.bfTop)+1}/${here.length}) — 끌어서 옮기세요`);
 }
 function ovlStackCount(){
   let groups=0,n=0;

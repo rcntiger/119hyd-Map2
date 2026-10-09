@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){

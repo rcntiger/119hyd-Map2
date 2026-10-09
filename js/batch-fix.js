@@ -1,10 +1,11 @@
 /* 119hyd-Map2 · js/batch-fix.js — 일괄 위치수정 (PC 전용) */
-AppFiles.reg('js/batch-fix.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/batch-fix.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 일괄 위치수정 (PC 전용) ══════════
    현재 지도에 보이는(필터 적용된) 소화전을 끌어서 옮길 수 있는 마커로 바꾸고,
    옮긴 것들을 모아 두었다가 [저장]으로 한 번에 DB에 반영한다. 저장 전에는 언제든 되돌릴 수 있다. */
-let _bf=null; // {marks:Map(itemId → {marker,line,orig,idx}), changed:Set}
+let _bf=null; // {marks:Map(itemId → {marker,line,orig,idx}), changed:Set, dragId:끌고 있는 소화전 id}
+function _bfInfo(t){const el=document.getElementById('bfInfo');if(el)el.textContent=t||'';}
 const _bfImgCache={};
 function _bfImg(color,moved){
   const k=color+(moved?'m':'');
@@ -26,7 +27,7 @@ function toggleBatchFix(){
   if(targets.length>400&&!confirm(`${targets.length}개 소화전을 편집 마커로 바꿉니다. 조나 팀으로 범위를 좁히면 더 가볍습니다. 계속할까요?`))return;
   closeIw();
   if(fixLocationIdx>=0){fixLocationIdx=-1;kakaoMap.setCursor('');syncPlaceBar();}
-  _bf={marks:new Map(),changed:new Set()};
+  _bf={marks:new Map(),changed:new Set(),dragId:null};
   targets.forEach(({d,i})=>{
     const o=overlays[i];
     o?.overlay?.setMap(null); // 원래 마커는 잠시 숨김 (번호 라벨은 남겨서 어느 소화전인지 보이게)
@@ -34,12 +35,24 @@ function toggleBatchFix(){
     const marker=new kakao.maps.Marker({position:pos,draggable:true,image:_bfImg(groupColor(d),false),title:`${d.name} (${(d.address||'').replace('서울특별시 금천구 ','')})`,zIndex:5});
     marker.setMap(kakaoMap);
     const rec={marker,line:null,orig:{lat:d.lat,lng:d.lng},idx:i,d};
-    kakao.maps.event.addListener(marker,'dragend',()=>_bfMoved(rec));
+    // 잡는 순간 어느 번호인지 알려 주고(안내 줄), 그 번호를 원래 자리의 이름표에서 뺀다
+    kakao.maps.event.addListener(marker,'dragstart',()=>{
+      _bf.dragId=d.id;
+      _ovSet(overlays[i]?.labelOverlay,false);
+      ovlRefresh();
+      _bfInfo(`✋ ${d.name} 옮기는 중`);
+    });
+    kakao.maps.event.addListener(marker,'dragend',()=>{_bf.dragId=null;rec.lastDrag=Date.now();_bfMoved(rec);});
+    // 겹친 곳: 마커를 누르면(끌지 않고) 다음 번호가 맨 위로 올라와, 원하는 번호를 골라 잡을 수 있다
+    kakao.maps.event.addListener(marker,'click',()=>{if(Date.now()-(rec.lastDrag||0)<400)return;ovlBfCycle(i);});
+    kakao.maps.event.addListener(marker,'mouseover',()=>{if(_bf&&!_bf.dragId)_bfInfo(`👆 ${d.name}`);});
     kakao.maps.event.addListener(marker,'rightclick',()=>_bfRevertOne(rec));
     _bf.marks.set(d.id,rec);
   });
   document.getElementById('batchFixBar').style.display='flex';
   document.getElementById('btnBatchFix').classList.add('on');
+  _bfInfo('');
+  applyFilter(); // 편집 마커의 이름표를 켜고(번호가 보여야 하므로), 겹친 곳은 "▶ 잡을 번호" 표시
   _bfCount();
   showToast(`${targets.length}개 소화전을 끌어서 옮길 수 있습니다`,'ok');
 }
@@ -54,7 +67,11 @@ function _bfMoved(rec){
     _bf.changed.add(rec.d.id);
   }else _bf.changed.delete(rec.d.id);
   rec.marker.setImage(_bfImg(groupColor(rec.d),moved));
-  overlays[rec.idx]?.labelOverlay?.setPosition(p); // 번호 라벨도 따라 이동
+  const lb=overlays[rec.idx]?.labelOverlay;
+  lb?.setPosition(p); // 번호 라벨도 따라 이동
+  _ovSet(lb,!_labelFar);
+  ovlRefresh(); // 옮긴 것은 자기 번호만, 원래 자리 이름표에는 남은 번호만
+  _bfInfo(moved?`${rec.d.name} 옮김 (저장 전)`:`${rec.d.name} 원래 위치`);
   _bfCount();
 }
 function _bfRevertOne(rec){
@@ -79,6 +96,7 @@ function _bfExit(){
     o?.labelOverlay?.setPosition(new kakao.maps.LatLng(rec.d.lat,rec.d.lng)); // 저장 안 한 것은 원위치
   });
   _bf=null;
+  _ovl.groups.forEach(g=>{delete g.bfTop;});
   document.getElementById('batchFixBar').style.display='none';
   document.getElementById('btnBatchFix')?.classList.remove('on');
   applyFilter(); // 숨겼던 원래 마커를 필터 상태대로 다시 표시

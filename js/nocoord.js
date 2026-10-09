@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/nocoord.js — 좌표 없는 소화전: 위치 지정 · 지도 없이 정보카드 · 모아 보기(좌표없음/겹친 위치) 버튼 */
-AppFiles.reg('js/nocoord.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/nocoord.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 모아 보기 (목록 위 버튼) ══════════
    ''        : 평소

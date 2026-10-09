@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/search.js — 지도 검색 */
-AppFiles.reg('js/search.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/search.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 지도 검색 ━━
 let srchMarkers=[];

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-tools.js — 지도 도구: 확대/축소 · 툴팁 · 이름표 · 위성 · 거리재기 */
-AppFiles.reg('js/map-tools.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-tools.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 위성 ━━
 function mapZoomIn(){if(kakaoMap)kakaoMap.setLevel(kakaoMap.getLevel()-1,{animate:true});}
@@ -26,7 +26,7 @@ function toggleLabelVisibility(){
   Object.entries(overlays).forEach(([i,o])=>{
     if(!o.labelOverlay)return;
     const hide=!items[i]||isHidden(items[i]);
-    _ovSet(o.labelOverlay,!hide&&labelsOn&&!_labelFar);
+    _ovSet(o.labelOverlay,!hide&&_labelWanted(items[i])&&!_labelFar); // 일괄 위치수정 중인 마커는 '이름 OFF'여도 번호 유지
   });
 }
 function toggleSat(){satMode=!satMode;const btn=document.getElementById('btnSat');if(satMode){kakaoMap.setMapTypeId(kakao.maps.MapTypeId.HYBRID);btn.classList.add('on-sat');btn.innerHTML='🗺️<span class="btn-txt"> 일반</span>';}else{kakaoMap.setMapTypeId(kakao.maps.MapTypeId.ROADMAP);btn.classList.remove('on-sat');btn.innerHTML='🛰️<span class="btn-txt"> 위성</span>';}}

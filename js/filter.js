@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -148,9 +148,11 @@ function syncZoomVisibility(force){
     const d=items[i];if(!d)return;
     const hide=isHidden(d);
     _ovSet(o.overlay,!hide&&!_zoomFar);
-    _ovSet(o.labelOverlay,!hide&&labelsOn&&!_labelFar);
+    _ovSet(o.labelOverlay,!hide&&_labelWanted(d)&&!_labelFar);
   });
 }
+// 이름표를 보여야 하는지: '이름 ON'이거나, 일괄 위치수정 중인 마커 (어느 번호를 옮기는지 알아야 하므로 항상 표시)
+function _labelWanted(d){return labelsOn||!!(_bf&&_bf.marks.has(d.id));}
 function setZoomRuleOff(off){_zoomRuleOff=!!off;syncZoomVisibility(true);}
 function _ovSet(ov,on){
   if(!ov)return;
@@ -171,7 +173,7 @@ function applyFilter(){
     if(o){
       const inBf=_bf&&_bf.marks.has(d.id); // 일괄 위치수정 중인 마커는 원래 마커를 숨긴 채 유지
       _ovSet(o.overlay,!hide&&!_zoomFar&&!inBf);
-      _ovSet(o.labelOverlay,!hide&&labelsOn&&!_labelFar);
+      _ovSet(o.labelOverlay,!hide&&_labelWanted(d)&&!_labelFar&&!(_bf&&_bf.dragId===d.id));
       // 클러스터러 계산용 invisible 마커도 같이 빼줘야 카카오 기본 풍선이 남지 않음
       if(clusterer&&o.clMarker&&o.hidden!==hide){
         if(hide)toRemove.push(o.clMarker);

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/location.js — 잘못된 위치 수정 · 좌표→주소 · 좌표 재검색 · 확인 핀 */
-AppFiles.reg('js/location.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/location.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // 좌표가 없는 개별 항목만 다시 지오코딩 시도
 // ━━ 잘못된 위치 수정 (지도를 클릭해 새 위치 지정) ━━
@@ -31,6 +31,7 @@ function startFixLocation(idx){
   }
   hyReRender(idx);
   syncPlaceBar(); // 마커가 없는 소화전이면 지도 위 안내 줄을 띄우거나 내림
+  ovlRefresh();   // 겹친 자리였다면: 수정 중인 것의 이름표는 자기 번호만 보이게
 }
 // 좌표 → 주소 역지오코딩 (지도를 클릭했을 때 그 지점의 주소를 함께 받아오기 위함)
 // 주소·장소 검색은 common/kakao-geo.js(KakaoGeo) 사용 — 지도 SDK services, REST 키 불필요
@@ -81,6 +82,7 @@ async function applyFixLocation(idx,latLng){
     showToast(addr?'✅ 위치·주소가 함께 수정되었습니다':'✅ 위치가 수정되었습니다 (주소 확인 실패)','ok');
   }catch(e){
     setOtherMarkersHidden(idx,false);
+    ovlRefresh();
     showToast('위치 수정 실패: '+(e?.message||''),'err');
   }
 }

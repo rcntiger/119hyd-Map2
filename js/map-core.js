@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-core.js — 카카오 지도 초기화 · 툴바 표시 · 진단 · 항목 활성화/전체 보기 */
-AppFiles.reg('js/map-core.js','v3.2.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-core.js','v3.2.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Kakao Map ══════════ */
 // 지도 툴바 표시 상태를 현재 상황에 맞게 맞춘다
