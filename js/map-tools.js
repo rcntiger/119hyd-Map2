@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-tools.js — 지도 도구: 확대/축소 · 툴팁 · 이름표 · 위성 · 거리재기 */
-AppFiles.reg('js/map-tools.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-tools.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 위성 ━━
 function mapZoomIn(){if(kakaoMap)kakaoMap.setLevel(kakaoMap.getLevel()-1,{animate:true});}

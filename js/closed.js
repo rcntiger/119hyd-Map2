@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/closed.js — 폐전 표시 (지우지 않고 표시만: 회색 마커 · 진행률과 인쇄에서 제외 · 되돌리기 가능) */
-AppFiles.reg('js/closed.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/closed.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 폐전 표시 ══════════
    폐전된 소화전은 지우지 않고 표시만 한다. 지우면 과거 점검 기록·이력이 사라지고, 같은 엑셀을 다시 올리면 되살아나기 때문.
@@ -64,7 +64,7 @@ function renderClosedPopup(iwEl,idx,d){
     <div class="iw-closed-box">
       <b>폐전된 소화전입니다</b>${when?` — ${when}`:''}${by?` · ${esc(by)}`:''}<br>
       진행률과 인쇄에서 빠집니다. 점검 기록과 이력은 남아 있습니다.
-      <button class="iw-closed-undo admin-only" onclick="toggleClosed(${idx})">↩ 폐전 취소 (다시 점검 대상으로)</button>
+      <button class="iw-closed-undo admin-only pc-only" onclick="toggleClosed(${idx})">↩ 폐전 취소 (다시 점검 대상으로)</button>
     </div>
     <div class="iw-divider"></div>
     <div class="iw-memo">

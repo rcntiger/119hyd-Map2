@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/nocoord.js — 좌표 없는 소화전: 위치 지정 · 지도 없이 정보카드 · 모아 보기(좌표없음/겹친 위치) 버튼 */
-AppFiles.reg('js/nocoord.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/nocoord.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 모아 보기 (목록 위 버튼) ══════════
    ''        : 평소
@@ -18,7 +18,8 @@ function updateQuickChips(){
   const row=document.getElementById('quickRow');if(!row)return;
   const nc=ncCount(), st=ovlStackCount(), cl=closedCount();
   if(!nc&&!st.groups&&!cl&&!quickFilter){row.style.display='none';row.innerHTML='';return;}
-  const chip=(k,on,label,title)=>`<button class="fbtn quick-chip${on?' active':''}" onclick="setQuickFilter('${k}')" title="${title}">${label}${on?' ✕':''}</button>`;
+  // 좌표없음·겹친 위치·폐전 모아 보기는 사무실(PC)에서 정리할 때 쓰는 것 — 모바일 화면에는 내지 않는다
+  const chip=(k,on,label,title)=>`<button class="fbtn quick-chip pc-only${on?' active':''}" onclick="setQuickFilter('${k}')" title="${title}">${label}${on?' ✕':''}</button>`;
   row.innerHTML=
     (nc||quickFilter==='nocoord'?chip('nocoord',quickFilter==='nocoord',`📍 좌표없음 ${nc}개`,'좌표가 없어 지도에 표시되지 않는 소화전만 목록에 보기'):'')
    +(st.groups||quickFilter==='overlap'?chip('overlap',quickFilter==='overlap',`⧉ 겹친 위치 ${st.groups}곳 (${st.items}개)`,'같은 자리에 겹쳐 찍힌 소화전만 목록과 지도에 보기'):'')
@@ -76,7 +77,7 @@ function ncOpenCard(idx){
   closeIw(); // 지도에 열린 카드·겹침 선택 창·이전 가운데 카드를 모두 닫음
   const e=_ncEls(true);
   _ncIdx=idx;
-  e.note.innerHTML=`📍 좌표가 없어 지도에 표시되지 않습니다. 점검 내용은 여기서 입력할 수 있습니다.`;
+  e.note.innerHTML=`📍 좌표가 없어 지도에 표시되지 않습니다. 점검 내용은 여기서 입력할 수 있습니다.<span class="pc-only"> 위치는 아래 "위치 지정"으로 넣습니다.</span>`;
   renderPopup(e.el,idx,d,null);
   e.el.scrollTop=0;
   e.bg.classList.add('open');

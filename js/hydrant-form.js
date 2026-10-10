@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -59,13 +59,16 @@ function getExcelHydrantType(d){
   if(/지하/.test(vals))return 'underground';
   return null;
 }
+// 시설 종류는 올린 데이터(엑셀)로 정해진다. 데이터에 종류가 없을 때만 저장된 점검 기록의 값을 쓴다.
+function hyTypeOf(d){return getExcelHydrantType(d)||hydrantMap[d.id]?.hydrant_type||null;}
 function hyGetDraft(idx,d){
   if(!hyDraft[idx]){
-    const rec=hydrantMap[d.id];
-    // 저장된 점검 기록이 아직 없으면, 엑셀에서 자동 판별된 종류(있는 경우)를 기본값으로 사용
+    let rec=hydrantMap[d.id];
     const excelType=getExcelHydrantType(d);
+    // 예전에 카드에서 종류를 바꿔 저장한 기록이 데이터의 종류와 점검 방식(소화전 ↔ 소화장치)까지 다르면, 그 결과 값은 쓸 수 없으므로 비운다
+    if(rec&&excelType&&rec.hydrant_type&&hyIsSimpleType(rec.hydrant_type)!==hyIsSimpleType(excelType))rec={...rec,result:null,defect_detail:''};
     hyDraft[idx]={
-      hydrant_type:rec?.hydrant_type||excelType||null,
+      hydrant_type:excelType||rec?.hydrant_type||null,
       paint:rec?.paint||null,
       insul:rec?.insul||null,
       protect:rec?.protect||null,
@@ -85,15 +88,11 @@ function hyReRender(idx){
   const el=ov.iw.getContent&&ov.iw.getContent();
   if(el){renderPopup(el,idx,d,ov.iw);ov.popupRendered=true;}
 }
+// 종류 고르기 — 올린 데이터에 종류가 없는 시설에서만 쓰인다 (종류가 있으면 버튼이 나오지 않고, 불러도 바뀌지 않음)
 function hySetType(idx,val){
   const d=items[idx];if(!d)return;
+  if(getExcelHydrantType(d))return;
   const draft=hyGetDraft(idx,d);
-  // 엑셀에서 자동 판별된 값과 다른 버튼을 누르면 실수 방지용 확인창을 띄운다
-  if(draft._fromExcel&&draft.hydrant_type&&draft.hydrant_type!==val){
-    const label=HY_TYPE_LABEL[val]||val;
-    if(!confirm(`${label}(으)로 바꾸시겠습니까?`))return;
-    draft._fromExcel=false; // 수동으로 확정했으므로 자동판별 상태 해제
-  }
   const before=draft.hydrant_type;
   draft.hydrant_type=(draft.hydrant_type===val)?null:val;
   // 소화전 ↔ 비상소화장치로 바꾸면 점검 항목이 달라지므로 고른 결과를 비운다
@@ -147,7 +146,15 @@ function hyTypeFromText(s){
   if(/지상|^1$|^G$/i.test(s))return 'ground';
   return s?'underground':null;
 }
-function hyIsEmergency(d){return (hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d))==='emergency';}
+function hyIsEmergency(d){return hyTypeOf(d)==='emergency';}
+const HY_TYPE_ICON={ground:'🔴',underground:'🔵',emergency:'🧰',ugdevice:'🌀'};
+// 카드의 종류 표시: 데이터에 종류가 있으면 글자로만 보여 주고, 없을 때만 고르는 버튼을 낸다
+function hyTypeView(idx,d,draft,title,right){
+  const fixed=getExcelHydrantType(d);
+  if(fixed)return `<div class="hy-type-fixed"><span class="hy-type-k">${title}</span><b>${HY_TYPE_ICON[fixed]||''} ${HY_TYPE_LABEL[fixed]||fixed}</b>${right||''}</div>`;
+  return `<div class="hy-label" style="display:flex;align-items:baseline;gap:6px">${title}<span style="color:#dc2626;font-weight:800">(데이터에 없음 · 선택)</span>${right||''}</div>
+      ${hyTypeButtons(idx,draft)}`;
+}
 // 종류 버튼: 윗줄 소화전(지상식·지하식), 아랫줄 소화장치(비상·지하식)
 function hyTypeButtons(idx,draft){
   const b=(k,t)=>`<button class="hy-tbtn${draft.hydrant_type===k?' on':''}" onclick="hySetType(${idx},'${k}')">${t}</button>`;
@@ -168,8 +175,7 @@ function hyEmergencyFormHtml(idx,draft){
   const S=HY_SIMPLE[draft.hydrant_type]||HY_SIMPLE.emergency;
   return `
     <div class="hy-section">
-      <div class="hy-label">시설 종류</div>
-      ${hyTypeButtons(idx,draft)}
+      ${hyTypeView(idx,items[idx],draft,'시설 종류','')}
     </div>
     <div class="hy-section" style="margin-bottom:0">
       <div class="hy-label">이상유무 <span class="hy-req">필수</span> <span style="text-transform:none;font-weight:600;color:#94a3b8">· ${S.hint}</span></div>

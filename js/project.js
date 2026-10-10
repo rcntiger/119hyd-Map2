@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project.js — 홈 화면: 계획 목록 · 세분계획 · 구역 담당 팀 순환 · 계획 생성/수정/삭제 */
-AppFiles.reg('js/project.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Home / Project ══════════ */
 // 만료 배지 HTML 생성 (공통)

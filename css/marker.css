@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.5.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.7.2"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
@@ -33,7 +33,7 @@
 .iw-wrap::-webkit-scrollbar{width:3px}
 .iw-wrap::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
 .iw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.iw-team-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px}
+.iw-team-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
 .iw-team-badge.done{background:rgba(34,197,94,.15)!important;color:#22c55e!important}
 .iw-close{cursor:pointer;color:#94a3b8;font-size:18px;line-height:1;padding:2px 4px}
 .iw-name{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px}

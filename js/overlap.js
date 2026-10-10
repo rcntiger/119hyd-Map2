@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/overlap.js — 같은 자리에 겹친 소화전: 묶음 계산 · 개수 배지 · 이름표 묶기 · 눌러서 고르기 */
-AppFiles.reg('js/overlap.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/overlap.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 겹친 소화전 ══════════
    엑셀 좌표가 주소 기준이라, 한 건물·한 지번에 소화전이 여럿이면 전부 같은 점에 찍힌다.

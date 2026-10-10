@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -90,7 +90,7 @@ const HY_ICON_EM=`<svg viewBox="0 0 24 24" width="80%" height="80%" style="point
 const HY_ICON_REEL=`<svg viewBox="0 0 24 24" width="80%" height="80%" style="pointer-events:none;display:block;margin:auto"><circle cx="10.5" cy="11.5" r="6.8" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="10.5" cy="11.5" r="2.4" fill="#fff"/><path d="M10.5 18.3 H21" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>`;
 function getMarkerIconHtml(d){
   if(isClosed(d))return '<span class="mk-x">✕</span>'; // 폐전
-  const type=hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d);
+  const type=hyTypeOf(d);
   if(type==='ground')return HY_ICON_GROUND;
   if(type==='underground')return HY_ICON_UNDER;
   if(type==='emergency')return HY_ICON_EM;
@@ -255,13 +255,13 @@ function renderPopup(iwEl,idx,d,iw){
       <div class="iw-name">${esc(d.name)}</div>
       <div class="iw-name-btns">
         <button class="iw-rv-inline" onclick="showHistory(${idx})" title="이 소화전의 위치·점검 변경 기록">📜 이력</button>
-        ${d.lat&&d.lng?`<button class="iw-rv-inline" onclick="printFromHydrant(${idx})" title="이 소화전을 중심으로 주변 소화전 인쇄">🖨 기준 인쇄</button>`:''}
+        ${d.lat&&d.lng?`<button class="iw-rv-inline pc-only" onclick="printFromHydrant(${idx})" title="이 소화전을 중심으로 주변 소화전 인쇄">🖨 기준 인쇄</button>`:''}
       </div>
     </div>
     ${d.address?`<div class="iw-addr-row"><span class="iw-addr iw-addr-full">📍 ${esc((d.address||'').replace(/^서울특별시\s*/,''))}</span></div>`:''}
     <div class="iw-latlng-row">🧭 위도 ${d.lat?d.lat.toFixed(6):'-'}, 경도 ${d.lng?d.lng.toFixed(6):'-'}${d.loc_fixed_at?` <span class="iw-locfixed-badge">📍 ${(dt=>`${String(dt.getFullYear()).slice(-2)}.${dt.getMonth()+1}.${dt.getDate()}`)(new Date(d.loc_fixed_at))} 수정</span>`:''}</div>
     <div class="hy-fixloc-row">
-      ${d.lat&&d.lng?`<button class="hy-fixloc-btn" onclick="startFixLocation(${idx})">📍 위치 수정</button>`:`<button class="hy-fixloc-btn" onclick="startPlaceLocation(${idx})">📍 위치 지정 (지도에서 누르기 · 현위치)</button>`}
+      ${d.lat&&d.lng?`<button class="hy-fixloc-btn" onclick="startFixLocation(${idx})">📍 위치 수정</button>`:`<button class="hy-fixloc-btn pc-only" onclick="startPlaceLocation(${idx})">📍 위치 지정 (지도에서 누르기 · 현위치)</button>`}
       ${d.lat&&d.lng?`<button class="hy-fixloc-btn hy-rv-btn" onclick="openRvFromPopup(new kakao.maps.LatLng(${d.lat},${d.lng}))">🔭 로드뷰</button>`:''}
     </div>
     ${extraStr?`<div class="iw-extra">${esc(extraStr)}</div>`:''}
@@ -274,8 +274,7 @@ function renderPopup(iwEl,idx,d,iw){
 
     <div id="hyForm-${idx}">
     <div class="hy-section">
-      <div class="hy-label" style="display:flex;align-items:baseline;gap:6px">소화전 종류<span style="color:#dc2626;font-weight:800">(자동판별)</span>${installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치년도 ${esc(String(installYear))}</span>`:''}</div>
-      ${hyTypeButtons(idx,draft)}
+      ${hyTypeView(idx,d,draft,'소화전 종류',installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치년도 ${esc(String(installYear))}</span>`:'')}
     </div>
 
     <div class="hy-collapsible-row">
@@ -362,7 +361,7 @@ function renderPopup(iwEl,idx,d,iw){
     <button class="iw-btn done-btn${isDone?' is-done':''} iw-done-bottom" id="doneBtn-${idx}" onclick="toggleDone(${idx})">
       ${isDone?'✓ 점검 완료 (취소)':'점검 완료시 클릭'}
     </button>
-    <button class="iw-closed-btn admin-only" onclick="toggleClosed(${idx})" title="철거·폐전된 소화전이면 표시 (지우지 않고 진행률·인쇄에서만 제외)">🚫 폐전 처리</button>`;
+    <button class="iw-closed-btn admin-only pc-only" onclick="toggleClosed(${idx})" title="철거·폐전된 소화전이면 표시 (지우지 않고 진행률·인쇄에서만 제외)">🚫 폐전 처리</button>`;
 
   // 비상소화장치(함)는 도색·보온·사용가부 대신 이상유무만 (hydrant-form.js)
   if(hyIsSimpleType(draft.hydrant_type)){

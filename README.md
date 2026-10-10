@@ -49,7 +49,7 @@
 
 | 구분 | 사용 기술 |
 |---|---|
-| 프론트엔드 | 순수 HTML/CSS/JS — `css/` 9개 · `js/` 32개 파일 (프레임워크·번들러 없음) |
+| 프론트엔드 | 순수 HTML/CSS/JS — `css/` 9개 · `js/` 33개 파일 (프레임워크·번들러 없음) |
 | 지도 | Kakao Maps JS SDK (+ services 라이브러리: 지오코딩/장소검색) |
 | 백엔드 | Supabase (PostgreSQL + PostgREST + Storage) |
 | 사진 저장 | Cloudinary (unsigned upload preset) |
@@ -100,6 +100,7 @@ common의 기존 `config.js`(ConfigUtil)·`kakao.js`(KakaoUtil)는 이 앱에서
 │   ├── location-master.js  위치 원장 (hydmap_locations)
 │   ├── geocode.js          주소 → 좌표 (KakaoGeo · Nominatim)
 │   ├── excel.js            엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용)
+│   ├── export-original.js  원본 형식으로 내려받기 (올린 엑셀 칸 그대로 + 폐전·점검 결과)
 │   ├── search.js           지도 검색
 │   ├── gps.js              현위치 · 정밀 GPS 보정
 │   ├── batch-fix.js        일괄 위치수정 (PC 전용)

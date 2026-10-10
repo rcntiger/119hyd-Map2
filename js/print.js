@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print.js — 인쇄: 범위 선택 · 점검 목록표 */
-AppFiles.reg('js/print.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 (전체 / 팀 / 조) ══════════ */
 // 범위 값: 'all' | 'team:1팀' | 'jo:1팀 2조'
@@ -149,7 +149,7 @@ function doPrint(){
 // ── 점검 목록표: 새 창에 표 형태로 만들어 인쇄 (조별로 페이지 분리) ──
 function _printList(scope,list,opt){
   const A=opt?.anchor;
-  const typeTxt=d=>{const t=hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d);return t==='ground'?'지상':t==='underground'?'지하':t==='emergency'?'비상':t==='ugdevice'?'지하장치':'';};
+  const typeTxt=d=>{const t=hyTypeOf(d);return t==='ground'?'지상':t==='underground'?'지하':t==='emergency'?'비상':t==='ugdevice'?'지하장치':'';};
   const byGroup={};
   if(A)byGroup[opt.label]=list.slice();
   else list.forEach(d=>{const g=String(d.group_name||'').trim()||'(미지정)';(byGroup[g]=byGroup[g]||[]).push(d);});

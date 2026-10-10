@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){
@@ -26,13 +26,13 @@ function buildListItem(i){
       <div class="iname">${esc(d.name)}</div>
       <div class="isub">${esc((d.address||'').replace('서울특별시 금천구 ',''))}</div>
       <div class="itags">
-        ${d.group_name?`<span class="itag">${esc(d.group_name)}</span>`:''}
+        ${d.group_name?`<span class="itag itag-grp">${esc(d.group_name)}</span>`:''}
         ${isClosed(d)?'<span class="itag" style="background:#e5e7eb;color:#374151">🚫 폐전</span>':''}
         ${hydrantMap[d.id]?`<span class="itag" style="background:${hyStatusInfo(hydrantMap[d.id]).bg};color:${hyStatusInfo(hydrantMap[d.id]).fg}">${hyStatusInfo(hydrantMap[d.id]).label}</span>`:''}
         ${isDone?'<span class="itag done-tag">✓ 완료</span>':''}
         ${memoMap[d.id]?'<span class="itag">📝 메모</span>':''}
         ${(photoMap[d.id]?.length)?`<span class="itag">📷 ${photoMap[d.id].length}</span>`:''}
-        ${noCoord?`<span class="itag" style="background:#fee2e2;color:#dc2626">📍 좌표없음</span>${d.address?`<button class="itag" style="background:#e0e7ff;color:#4338ca;cursor:pointer;border:none" onclick="event.stopPropagation();retryGeocodeItem(${i})" title="주소로 좌표를 다시 찾기">🔄 재시도</button>`:''}<button class="itag" style="background:#dbeafe;color:#1d4ed8;cursor:pointer;border:none" onclick="event.stopPropagation();startPlaceLocation(${i})" title="지도를 누르거나 현위치(GPS)로 위치 지정">📍 위치 지정</button>`:''}
+        ${noCoord?`<span class="itag" style="background:#fee2e2;color:#dc2626">📍 좌표없음</span>${d.address?`<button class="itag pc-only" style="background:#e0e7ff;color:#4338ca;cursor:pointer;border:none" onclick="event.stopPropagation();retryGeocodeItem(${i})" title="주소로 좌표를 다시 찾기">🔄 재시도</button>`:''}<button class="itag pc-only" style="background:#dbeafe;color:#1d4ed8;cursor:pointer;border:none" onclick="event.stopPropagation();startPlaceLocation(${i})" title="지도를 누르거나 현위치(GPS)로 위치 지정">📍 위치 지정</button>`:''}
         ${_ovl.of[i]?'<span class="itag" style="background:#e5e7eb;color:#111827" title="다른 소화전과 같은 자리에 찍혀 있음 (3m 이내)">⧉ 겹침</span>':''}
       </div>
     </div>`;

@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.5.0';
+const APP_VERSION = 'v3.7.2';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -22,7 +22,7 @@ const AppFiles = {
   // 공통 모듈: 파일 → 그 파일이 만드는 전역 이름 (불러왔는지 확인용. null이면 확인 생략)
   // ※ common의 기존 config.js(ConfigUtil)·kakao.js(KakaoUtil)는 쓰지 않는다 — keys.js(APP_KEYS)·kakao-geo.js(KakaoGeo)와 별개 파일
   common: {'logger.js':null,'utils.js':'Utils','supabase.js':'SupabaseUtil','excel.js':'ExcelUtil','keys.js':'APP_KEYS','kakao-geo.js':'KakaoGeo'},
-  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','nocoord','overlap','closed','location','location-master','geocode','excel','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
+  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','nocoord','overlap','closed','location','location-master','geocode','excel','export-original','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
 
   loaded: {},                                   // js 파일이 스스로 적어 넣는 버전
   reg(name, ver) { this.loaded[name] = ver; },
@@ -121,8 +121,9 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
     <div class="map-header-row2">
       <button class="btn btn-ghost admin-only" onclick="showUploadModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">📂 소화전 업로드</button>
       <button class="btn btn-ghost admin-only" onclick="showResetColModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">🔧 데이터 재설정</button>
-      <button class="btn" onclick="exportExcel()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0;background:#22c55e;color:#fff;border:1px solid #22c55e">📊 결과 파일출력</button>
-      <button class="btn btn-ghost" onclick="showPrintModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">🖨 인쇄</button>
+      <button class="btn btn-ghost admin-only pc-only" onclick="exportOriginalFormat()" title="처음 올린 엑셀과 같은 칸 구성으로, 고친 위치·종류·폐전·점검 결과를 채워 내려받기" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">📥 원본 형식 내려받기</button>
+      <button class="btn pc-only" onclick="exportExcel()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0;background:#22c55e;color:#fff;border:1px solid #22c55e">📊 결과 파일출력</button>
+      <button class="btn btn-ghost pc-only" onclick="showPrintModal()" style="padding:5px 12px;font-size:12px;font-weight:700;flex-shrink:0">🖨 인쇄</button>
     </div>
   </div>
   <div class="layout">
@@ -175,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
           <button class="fbtn" onclick="clearPickedFilter()" style="font-size:11.5px;padding:4px 9px">전체 보기로</button>
         </div>
         <!-- 모아 보기: 좌표 없는 소화전 / 같은 자리에 겹친 소화전 (해당하는 것이 있을 때만 보임) -->
-        <div id="quickRow" style="display:none;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
+        <div id="quickRow" class="pc-only" style="display:none;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
       </div>
       <div class="list" id="listEl">
         <div style="text-align:center;color:var(--mt);font-size:12px;padding:30px 12px">

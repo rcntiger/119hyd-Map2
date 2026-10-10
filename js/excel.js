@@ -1,9 +1,9 @@
 /* 119hyd-Map2 · js/excel.js — 엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용) */
-AppFiles.reg('js/excel.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/excel.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Excel 업로드 / 컬럼 재설정 (공통 ExcelUtil.createReader 사용) ══════════ */
 let excelReader=null;
-let _excelMode='upload';     // 'upload'(전체 교체) | 'append'(새 번호만 추가) | 'reset'
+let _excelMode='upload';     // 'upload'(전체 교체) | 'append'(새 번호만 추가) | 'reset' | 'export'(원본 형식으로 내려받기 — 데이터는 바꾸지 않음)
 let _excelOrigFile=null;     // 업로드 모드에서 Storage에 원본 저장할 File
 let _resetOpts={delDone:false,delMemo:false,delPhotos:false};
 
@@ -79,18 +79,7 @@ async function proceedReset(){
   };
   showToast('원본 파일 확인 중...','');
   try{
-    const store=sbClient().storage;
-    const {data:files,error:listErr}=await store.from('hydmap-files').list(String(currentProject.id),{limit:10});
-    if(listErr)throw new Error('목록 조회 오류: '+listErr.message);
-    const orig=Array.isArray(files)?files.find(f=>f.name&&f.name.startsWith('original.')):null;
-    if(!orig){
-      console.warn('hydmap-files 목록:',files);
-      throw new Error(`원본 파일을 찾지 못했습니다 (해당 폴더에 파일 ${files?.length||0}개 있음)`);
-    }
-    const {data:blob,error:dlErr}=await store.from('hydmap-files').download(`${currentProject.id}/${orig.name}`);
-    if(dlErr)throw new Error('다운로드 오류: '+dlErr.message);
-    if(!blob)throw new Error('다운로드된 파일이 비어있습니다');
-    const file=new File([blob],orig.name,{type:blob.type||'application/octet-stream'});
+    const file=await fetchOriginalFile(); // export-original.js
     _excelMode='reset';
     _excelOrigFile=null; // 재설정 시 원본은 다시 저장하지 않음 (이미 Storage에 있음)
     await getExcelReader().open(file);
@@ -120,6 +109,14 @@ async function _onExcelConfirm(headers,rows,mapping){
     showToast('이름 컬럼이 매핑되지 않았습니다. 컬럼 설정을 확인해주세요.','err');
     return;
   }
+  // 원본 형식으로 내려받기: DB는 건드리지 않고 엑셀만 만든다 (export-original.js)
+  if(_excelMode==='export'){
+    _excelMode='upload';
+    await runExportOriginal(headers,rows,{iName,iAddr,iLat,iLng,iTeam,iGroup,iType,iJibun});
+    return;
+  }
+  // '폐전' 칸: 원본 형식으로 받은 파일을 다시 올리면 폐전 표시가 이어지도록, 이 이름의 칸이 있으면 읽는다 (칸 연결과 무관)
+  const iClosed=headers.findIndex(h=>String(h==null?'':h).trim()==='폐전');
   const parsed=rows.map(r=>{
     const typeRaw=iType!=null?String(r[iType]||'').trim():'';
     // 119hyd-inspec.html과 동일한 판별 규칙: "지상" 포함 또는 '1'/'G' → 지상식, 그 외(값이 있으면) 지하식
@@ -147,6 +144,15 @@ async function _onExcelConfirm(headers,rows,mapping){
     }
     if(iJibun!=null){const j=String(r[iJibun]||'').trim();if(j)extraObj['지번주소']=j;}
     if(hydrantType)extraObj._type=hydrantType;
+    if(iClosed>=0){
+      const cv=String(r[iClosed]==null?'':r[iClosed]).trim();
+      if(cv){
+        // 날짜로 읽히면 그 날짜, 엑셀 날짜 숫자(예: 46305)면 날짜로 바꾸고, 그 밖의 글자("폐전", "O" 등)면 오늘로
+        let cd=/^\d{5}(\.\d+)?$/.test(cv)?new Date(Date.UTC(1899,11,30)+parseFloat(cv)*86400000):new Date(cv);
+        if(isNaN(cd)||cd.getFullYear()<2000||cd.getFullYear()>2100)cd=new Date();
+        extraObj._closed_at=cd.toISOString();extraObj._closed_by='';
+      }
+    }
     // 엑셀에 위도/경도 컬럼이 매핑되어 있으면 그 값을 바로 사용 (지오코딩보다 정확함).
     // 값이 없거나 숫자가 아니면 null로 두고, 이후 업로드 단계에서 주소로 지오코딩해서 채운다.
     let excelLat=null,excelLng=null;
