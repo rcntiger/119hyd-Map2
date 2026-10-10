@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/nocoord.js — 좌표 없는 소화전: 위치 지정 · 지도 없이 정보카드 · 모아 보기(좌표없음/겹친 위치) 버튼 */
-AppFiles.reg('js/nocoord.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/nocoord.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 모아 보기 (목록 위 버튼) ══════════
    ''        : 평소
@@ -8,7 +8,7 @@ AppFiles.reg('js/nocoord.js','v3.2.4'); // 파일 버전 표시 (tools/bump-vers
    인쇄 미리보기·선택 표시 중에는 적용하지 않는다 (filter.js의 isHidden / isListHidden 참고) */
 let quickFilter='';
 
-function ncCount(){return items.filter(d=>!(d.lat&&d.lng)&&!_baseHidden(d)).length;}
+function ncCount(){return items.filter(d=>!(d.lat&&d.lng)&&!isClosed(d)&&!_baseHidden(d)).length;} // 폐전은 위치를 넣을 필요가 없으므로 제외
 function setQuickFilter(k){
   quickFilter=quickFilter===k?'':k;
   closeIw();
@@ -16,12 +16,13 @@ function setQuickFilter(k){
 }
 function updateQuickChips(){
   const row=document.getElementById('quickRow');if(!row)return;
-  const nc=ncCount(), st=ovlStackCount();
-  if(!nc&&!st.groups&&!quickFilter){row.style.display='none';row.innerHTML='';return;}
+  const nc=ncCount(), st=ovlStackCount(), cl=closedCount();
+  if(!nc&&!st.groups&&!cl&&!quickFilter){row.style.display='none';row.innerHTML='';return;}
   const chip=(k,on,label,title)=>`<button class="fbtn quick-chip${on?' active':''}" onclick="setQuickFilter('${k}')" title="${title}">${label}${on?' ✕':''}</button>`;
   row.innerHTML=
     (nc||quickFilter==='nocoord'?chip('nocoord',quickFilter==='nocoord',`📍 좌표없음 ${nc}개`,'좌표가 없어 지도에 표시되지 않는 소화전만 목록에 보기'):'')
-   +(st.groups||quickFilter==='overlap'?chip('overlap',quickFilter==='overlap',`⧉ 겹친 위치 ${st.groups}곳 (${st.items}개)`,'같은 자리에 겹쳐 찍힌 소화전만 목록과 지도에 보기'):'');
+   +(st.groups||quickFilter==='overlap'?chip('overlap',quickFilter==='overlap',`⧉ 겹친 위치 ${st.groups}곳 (${st.items}개)`,'같은 자리에 겹쳐 찍힌 소화전만 목록과 지도에 보기'):'')
+   +(cl||quickFilter==='closed'?chip('closed',quickFilter==='closed',`🚫 폐전 ${cl}개`,'폐전으로 표시한 소화전만 목록과 지도에 보기'):'');
   row.style.display='flex';
 }
 

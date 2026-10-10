@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print-area.js — 인쇄 영역 지정 (지도에서 드래그, PC 전용) */
-AppFiles.reg('js/print-area.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print-area.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 영역 지정 ══════════
    인쇄 창에서 "지도에서 영역 지정"을 고르면 → 지도 위에서 드래그로 사각형을 그리고

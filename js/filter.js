@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -82,12 +82,13 @@ function isHidden(d){
   if(_baseHidden(d))return true;
   // 모아 보기 '겹친 위치만': 선택 표시(인쇄 미리보기 포함) 중에는 적용하지 않음
   if(quickFilter==='overlap'&&!pickedFilterActive&&!ovlInStack(d))return true;
+  if(quickFilter==='closed'&&!pickedFilterActive&&!isClosed(d))return true; // 모아 보기 '폐전만'
   return false;
 }
 // 목록에서만 쓰는 숨김 여부. 모아 보기 '좌표없음만'은 목록만 거른다
 // (지도는 그대로 두어야, 위치를 지정했을 때 새로 생긴 마커가 바로 보인다)
 function isListHidden(d){
-  return isHidden(d)||(quickFilter==='nocoord'&&!pickedFilterActive&&!!(d.lat&&d.lng));
+  return isHidden(d)||(quickFilter==='nocoord'&&!pickedFilterActive&&(!!(d.lat&&d.lng)||isClosed(d)));
 }
 let sortMode='';
 function setSort(mode){
@@ -110,11 +111,11 @@ function setSort(mode){
   }else if(sortMode==='addr'){
     displayIndexOrder=items.map((d,i)=>i).sort((ia,ib)=>(items[ia].address||'').localeCompare(items[ib].address||'','ko'));
   }else if(sortMode==='type'){
-    // 지상식 → 지하식 → 미확인 순으로 묶어서 정렬
+    // 지상식 → 지하식 → 비상소화장치 → 미확인 순으로 묶어서 정렬
     const rank=i=>{
       const d=items[i];
       const t=hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d);
-      return t==='ground'?0:t==='underground'?1:2;
+      return ({ground:0,underground:1,emergency:2,ugdevice:3})[t]??4;
     };
     displayIndexOrder=items.map((d,i)=>i).sort((ia,ib)=>rank(ia)-rank(ib)||items[ia].name.localeCompare(items[ib].name,'ko'));
   }else{
@@ -162,7 +163,7 @@ function applyFilter(){
   filterText=document.getElementById('searchInput').value.trim();
   ovlRefresh(); // 겹침 묶음에서 지금 범위에 보이는 개수·배지·이름표 갱신 (아래 isHidden이 이 결과를 씀)
   // 모아 보기 대상이 하나도 안 남으면(전부 위치를 지정했거나 겹침을 다 풀었으면) 저절로 해제
-  if((quickFilter==='nocoord'&&!ncCount())||(quickFilter==='overlap'&&!ovlStackCount().groups))quickFilter='';
+  if((quickFilter==='nocoord'&&!ncCount())||(quickFilter==='overlap'&&!ovlStackCount().groups)||(quickFilter==='closed'&&!closedCount()))quickFilter='';
   const toAdd=[],toRemove=[];
   items.forEach((d,i)=>{
     const hide=isHidden(d);
@@ -194,7 +195,7 @@ function applyFilter(){
 
 // ━━ 통계 ━━
 function updateStats(){
-  const filtered=items.filter(d=>!isHidden(d));
+  const filtered=items.filter(d=>!isHidden(d)&&!isClosed(d)); // 폐전은 진행률에서 제외
   const tot=filtered.length;
   const done=filtered.filter(d=>doneMap[d.id]).length;
   const pct=tot?Math.round(done/tot*100):0;

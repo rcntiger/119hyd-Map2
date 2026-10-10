@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.2.4';
+const APP_VERSION = 'v3.5.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -22,7 +22,7 @@ const AppFiles = {
   // 공통 모듈: 파일 → 그 파일이 만드는 전역 이름 (불러왔는지 확인용. null이면 확인 생략)
   // ※ common의 기존 config.js(ConfigUtil)·kakao.js(KakaoUtil)는 쓰지 않는다 — keys.js(APP_KEYS)·kakao-geo.js(KakaoGeo)와 별개 파일
   common: {'logger.js':null,'utils.js':'Utils','supabase.js':'SupabaseUtil','excel.js':'ExcelUtil','keys.js':'APP_KEYS','kakao-geo.js':'KakaoGeo'},
-  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','nocoord','overlap','location','location-master','geocode','excel','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
+  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','nocoord','overlap','closed','location','location-master','geocode','excel','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
 
   loaded: {},                                   // js 파일이 스스로 적어 넣는 버전
   reg(name, ver) { this.loaded[name] = ver; },
@@ -448,6 +448,23 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
 
 <!-- ════ 모달: 엑셀 업로드 ════ -->
 <!-- ════ 모달: 컬럼 재설정 옵션 (컬럼 매핑/미리보기/필터는 공통 ExcelUtil.createReader 사용) ════ -->
+<div class="modal-bg" id="uploadModeModal">
+  <div class="modal" style="max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0">📂 소화전 업로드</h3>
+      <button onclick="hideModal('uploadModeModal')" style="background:none;border:none;color:var(--mt);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px">✕</button>
+    </div>
+    <div style="font-size:12.5px;color:var(--mt);margin-bottom:12px">이 계획에는 이미 소화전 <b id="uploadModeCount" style="color:var(--tx)"></b>개가 있습니다. 어떻게 올릴까요?</div>
+    <button class="btn btn-primary" onclick="startUpload('append')" style="width:100%;justify-content:flex-start;padding:12px 14px;margin-bottom:8px;text-align:left;line-height:1.5">
+      <span>➕ <b>기존 데이터에 추가</b><br><span style="font-weight:400;font-size:11.5px;opacity:.9">엑셀에서 아직 없는 번호만 더합니다. 이미 있는 번호는 건너뛰고, 기존 점검 기록은 그대로 둡니다.</span></span>
+    </button>
+    <button class="btn btn-danger" onclick="startUpload('replace')" style="width:100%;justify-content:flex-start;padding:12px 14px;text-align:left;line-height:1.5">
+      <span>🔄 <b>전체 교체</b><br><span style="font-weight:400;font-size:11.5px;opacity:.9">기존 소화전과 점검 기록(완료·메모·사진·폐전 표시)을 모두 지우고 새 엑셀로 바꿉니다.</span></span>
+    </button>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-ghost" onclick="hideModal('uploadModeModal')">취소</button></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="resetOptModal">
   <div class="modal" style="max-width:440px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">

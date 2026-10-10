@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.2.4"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.5.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -109,3 +109,6 @@
 
 /* 모아 보기 버튼 (좌표없음 / 겹친 위치) */
 .quick-chip{font-size:11.5px;padding:4px 10px;font-weight:700}
+
+/* 목록: 폐전된 소화전 */
+.item.closed-item .iname{color:var(--mt);text-decoration:line-through}

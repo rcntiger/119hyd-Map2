@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/history.js — 변경 이력 (hydmap_history) */
-AppFiles.reg('js/history.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/history.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 변경 이력 ══════════
    위치 수정·점검 입력·완료·메모·사진 변경을 hydmap_history 표에 한 줄씩 쌓는다 (수정·삭제 불가, 계속 누적).
@@ -35,7 +35,7 @@ function logHistory(d,action,detail,pid){
 const _HY_FIELD_LABEL={hydrant_type:'소화전종류',paint:'도색',insul:'보온',protect:'보호틀',roadmark:'노면표시',result:'사용가부',defect_detail:'고장내용'};
 function _hyFieldText(k,v){
   if(v===null||v===undefined||v==='')return '-';
-  if(k==='hydrant_type')return ({ground:'지상식',underground:'지하식'})[v]||v;
+  if(k==='hydrant_type')return HY_TYPE_LABEL[v]||v;
   if(k==='paint')return PAINT_LABEL[v]||v;
   if(k==='insul')return INSUL_LABEL[v]||v;
   if(k==='protect')return ({yes:'설치',no:'미설치'})[v]||v;

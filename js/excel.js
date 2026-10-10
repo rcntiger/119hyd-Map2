@@ -1,9 +1,9 @@
 /* 119hyd-Map2 · js/excel.js — 엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용) */
-AppFiles.reg('js/excel.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/excel.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Excel 업로드 / 컬럼 재설정 (공통 ExcelUtil.createReader 사용) ══════════ */
 let excelReader=null;
-let _excelMode='upload';     // 'upload' | 'reset'
+let _excelMode='upload';     // 'upload'(전체 교체) | 'append'(새 번호만 추가) | 'reset'
 let _excelOrigFile=null;     // 업로드 모드에서 Storage에 원본 저장할 File
 let _resetOpts={delDone:false,delMemo:false,delPhotos:false};
 
@@ -34,7 +34,19 @@ function showUploadModal(){
   if(!requireAdmin())return;
   if(!currentProject){showToast('프로젝트를 먼저 선택하세요','err');return;}
   if(items.length>0){
-    const ok=confirm(`이미 업로드된 소화전 ${items.length}개가 있습니다.\n엑셀을 다시 업로드하면 기존 데이터(점검 기록 포함)는 모두 삭제되고 새 엑셀 내용으로 교체됩니다.\n계속하시겠습니까?`);
+    // 이미 데이터가 있으면: 추가할지 전체를 바꿀지 먼저 고른다
+    document.getElementById('uploadModeCount').textContent=items.length;
+    showModal('uploadModeModal');
+    return;
+  }
+  startUpload('replace');
+}
+// mode: 'append' = 기존 데이터에 새 번호만 추가, 'replace' = 전체 교체
+function startUpload(mode){
+  hideModal('uploadModeModal');
+  if(!requireAdmin()||!currentProject)return;
+  if(mode==='replace'&&items.length>0){
+    const ok=confirm(`이미 업로드된 소화전 ${items.length}개가 있습니다.\n전체 교체를 하면 기존 데이터(점검 기록 포함)는 모두 삭제되고 새 엑셀 내용으로 교체됩니다.\n계속하시겠습니까?`);
     if(!ok)return;
   }
   const input=document.createElement('input');
@@ -42,8 +54,8 @@ function showUploadModal(){
   input.accept='.xlsx,.xls,.csv,.ods,.tsv';
   input.onchange=async()=>{
     const file=input.files[0];if(!file)return;
-    _excelMode='upload';
-    _excelOrigFile=file;
+    _excelMode=mode==='append'?'append':'upload';
+    _excelOrigFile=mode==='append'?null:file; // 추가분은 원본 백업을 덮어쓰지 않는다 (원본은 '데이터 재설정'이 씀)
     await getExcelReader().open(file);
   };
   input.click();
@@ -111,7 +123,8 @@ async function _onExcelConfirm(headers,rows,mapping){
   const parsed=rows.map(r=>{
     const typeRaw=iType!=null?String(r[iType]||'').trim():'';
     // 119hyd-inspec.html과 동일한 판별 규칙: "지상" 포함 또는 '1'/'G' → 지상식, 그 외(값이 있으면) 지하식
-    const hydrantType=typeRaw?(/지상|^1$|^G$/i.test(typeRaw)?'ground':'underground'):null;
+    // "비상" 포함 → 비상소화장치(함). 그 밖에는 "지상" 포함 또는 '1'/'G' → 지상식, 나머지(값이 있으면) 지하식
+    const hydrantType=hyTypeFromText(typeRaw); // 비상소화장치 · 지하식소화장치 · 지상식 · 지하식 (hydrant-form.js)
     const extraObj={};
     // ⚠ 매핑값은 컬럼명이 아니라 "몇 번째 열인지"를 가리키는 인덱스 숫자다.
     //    그래서 실제 헤더 텍스트(headers[iExtra])를 키로 써야 "도색년월일: 2012-06-12"처럼 나온다.
@@ -164,6 +177,8 @@ async function _onExcelConfirm(headers,rows,mapping){
 
   if(_excelMode==='reset'){
     await _runReset(parsed);
+  }else if(_excelMode==='append'){
+    await _runAppend(parsed);
   }else{
     await _runUpload(parsed);
   }
@@ -238,6 +253,36 @@ async function _runUpload(parsed){
   await loadProjectData();
 }
 
+// 번호 비교용: "금천-001595" · "금천-1595" · "001595"를 같은 것으로 본다 (지역명이 서로 다르게 적혀 있으면 다른 것)
+function _nameKey(name){
+  const s=String(name||'').replace(/\s+/g,'');
+  const m=s.match(/^(.*?)[-_]?(\d+)$/);
+  return m?{pre:m[1],num:String(+m[2])}:{pre:s,num:null};
+}
+// 추가 업로드: 엑셀에서 아직 없는 번호만 넣는다. 기존 소화전과 점검 기록은 건드리지 않는다.
+async function _runAppend(parsed){
+  const pid=currentProject.id;
+  const have=new Map(); // 숫자 → 지역명 집합
+  const seenRaw=new Set();
+  const add=(k,raw)=>{if(k.num===null)seenRaw.add(raw);else{if(!have.has(k.num))have.set(k.num,new Set());have.get(k.num).add(k.pre);}};
+  const has=(k,raw)=>k.num===null?seenRaw.has(raw):(have.has(k.num)&&(k.pre===''||have.get(k.num).has(k.pre)||have.get(k.num).has('')));
+  items.forEach(d=>add(_nameKey(d.name),String(d.name).trim()));
+  const fresh=[];let exist=0;
+  parsed.forEach(d=>{
+    const raw=String(d.name).trim(),k=_nameKey(raw);
+    if(has(k,raw)){exist++;return;} // 이미 있는 번호(또는 엑셀 안에서 중복된 번호)는 건너뜀
+    add(k,raw);fresh.push(d);
+  });
+  if(!fresh.length){showToast(`추가할 새 번호가 없습니다 (엑셀 ${parsed.length}개 모두 이미 있는 번호)`,'');return;}
+  const sample=fresh.slice(0,5).map(d=>d.name).join(', ')+(fresh.length>5?' …':'');
+  if(!confirm(`엑셀 ${parsed.length}개 중 새 번호 ${fresh.length}개를 추가합니다.\n(${sample})\n\n이미 있는 ${exist}개는 건너뜁니다. 기존 점검 기록은 그대로 둡니다.\n계속할까요?`))return;
+  const oldGroups=new Set(groups);
+  const ok=await _insertParsedItems(fresh,pid,'추가');
+  await loadProjectData();
+  const newG=groups.filter(g=>!oldGroups.has(g));
+  showToast(`✅ ${ok}/${fresh.length}개 추가 · 기존 ${exist}개는 그대로`+(newG.length?` · 새 조(${newG.join(', ')})가 생겼습니다 — 홈에서 세분계획을 갱신하세요`:''),ok===fresh.length?'ok':'err');
+}
+
 async function _runReset(parsed){
   const pid=currentProject.id;
   const {delDone,delMemo,delPhotos}=_resetOpts;
@@ -271,7 +316,7 @@ async function _runReset(parsed){
 /* ══════════ Excel Export ══════════ */
 async function exportExcel(){
   const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const typeLabel={ground:'지상식',underground:'지하식'};
+  const typeLabel=HY_TYPE_LABEL; // 지상식 · 지하식 · 비상소화장치
   const yesMidNo={yes:'양호',mid:'보통',no:'재도색'};
   const insulLabel={yes:'설치됨',mid:'불필요',no:'재설치'};
   const protectLabel={yes:'설치',no:'미설치'};
@@ -293,14 +338,17 @@ async function exportExcel(){
       '완료체크일자':doneMap[d.id]?.done_at?new Date(doneMap[d.id].done_at).toLocaleDateString('ko-KR'):'',
       '메모':memoMap[d.id]||'',
       '사진수':(photoMap[d.id]?.length)||0,
+      '폐전':isClosed(d)?(new Date(d.extra._closed_at).toLocaleDateString('ko-KR')||'폐전'):'',
       // 현재 좌표(위치 수정 시 바뀐 값) — 다른 시스템/엑셀로 옮길 때 쓰도록 출력
       '위도':d.lat?+d.lat.toFixed(7):'',
       '경도':d.lng?+d.lng.toFixed(7):'',
       '위치수정일':d.loc_fixed_at?new Date(d.loc_fixed_at).toLocaleDateString('ko-KR'):'',
     };
   });
-  const doneRows=allRows.filter((_,i)=>!!doneMap[items[i].id]);
-  const undoneRows=allRows.filter((_,i)=>!doneMap[items[i].id]);
+  // 폐전은 완료/미완료 시트에서 빼고 따로 '폐전' 시트에 모은다 (전체현황에는 '폐전' 칸과 함께 남음)
+  const doneRows=allRows.filter((_,i)=>!!doneMap[items[i].id]&&!isClosed(items[i]));
+  const undoneRows=allRows.filter((_,i)=>!doneMap[items[i].id]&&!isClosed(items[i]));
+  const closedRows=allRows.filter((_,i)=>isClosed(items[i]));
   const modifiedRows=allRows.filter((_,i)=>!!hydrantMap[items[i].id]);
   const locFixedRows=allRows.filter((_,i)=>!!items[i].loc_fixed_at);
   let histRows=[];
@@ -315,6 +363,7 @@ async function exportExcel(){
     {name:'점검완료',rows:doneRows.length?doneRows:[{'안내':'완료 없음'}]},
     {name:'미완료',rows:undoneRows.length?undoneRows:[{'안내':'미완료 없음'}]},
     {name:'위치수정됨',rows:locFixedRows.length?locFixedRows:[{'안내':'위치를 수정한 소화전 없음'}]},
+    {name:'폐전',rows:closedRows.length?closedRows:[{'안내':'폐전으로 표시한 소화전 없음'}]},
     {name:'변경이력',rows:histRows.length?histRows:[{'안내':'기록된 변경 이력 없음'}]},
   ],`${currentProject?.name||'점검결과'}_${stamp}.xlsx`);
   showToast('📊 엑셀 저장 완료','ok');

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -84,10 +84,17 @@ function getTransparentMarkerImage(){
 // 지상식/지하식 구분 아이콘 (마커 안에 표시). 종류를 알 수 없으면 빈 원 그대로 둔다.
 const HY_ICON_GROUND=`<svg viewBox="0 0 24 24" width="80%" height="80%" style="pointer-events:none;display:block;margin:auto"><path fill="#fff" d="M9 3h6v2h1a1 1 0 0 1 1 1v1h-1.2l.9 1.8-1.8.9L13 7.5V9h-2V7.5l-1.9 2.2-1.8-.9L8.2 7H7V6a1 1 0 0 1 1-1h1V3zM8 11h8v9a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-9z"/></svg>`;
 const HY_ICON_UNDER=`<svg viewBox="0 0 24 24" width="80%" height="80%" style="pointer-events:none;display:block;margin:auto"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="#fff"/><line x1="12" y1="2.8" x2="12" y2="6.4" stroke="#fff" stroke-width="1.8"/><line x1="12" y1="17.6" x2="12" y2="21.2" stroke="#fff" stroke-width="1.8"/><line x1="2.8" y1="12" x2="6.4" y2="12" stroke="#fff" stroke-width="1.8"/><line x1="17.6" y1="12" x2="21.2" y2="12" stroke="#fff" stroke-width="1.8"/></svg>`;
+// 비상소화장치(함): 상자 모양
+const HY_ICON_EM=`<svg viewBox="0 0 24 24" width="80%" height="80%" style="pointer-events:none;display:block;margin:auto"><rect x="4.5" y="7" width="15" height="12.5" rx="1.5" fill="none" stroke="#fff" stroke-width="2.2"/><line x1="12" y1="7" x2="12" y2="19.5" stroke="#fff" stroke-width="1.8"/><rect x="8.5" y="3.8" width="7" height="3.2" fill="#fff"/></svg>`;
+// 지하식소화장치(소화전+호스릴 일체형): 호스릴 모양
+const HY_ICON_REEL=`<svg viewBox="0 0 24 24" width="80%" height="80%" style="pointer-events:none;display:block;margin:auto"><circle cx="10.5" cy="11.5" r="6.8" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="10.5" cy="11.5" r="2.4" fill="#fff"/><path d="M10.5 18.3 H21" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>`;
 function getMarkerIconHtml(d){
+  if(isClosed(d))return '<span class="mk-x">✕</span>'; // 폐전
   const type=hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d);
   if(type==='ground')return HY_ICON_GROUND;
   if(type==='underground')return HY_ICON_UNDER;
+  if(type==='emergency')return HY_ICON_EM;
+  if(type==='ugdevice')return HY_ICON_REEL;
   return '';
 }
 // 점검 저장/위치 수정 등으로 종류가 바뀌었을 때 마커 아이콘을 다시 그린다
@@ -98,12 +105,12 @@ function updateMarkerIcon(idx){
   if(el)el.innerHTML=getMarkerIconHtml(d);
 }
 // 이름표에 적는 글자: 앞의 지역명('금천-')을 떼고 번호만 (화면·인쇄 공통). 번호 형식이 아니면 이름 그대로.
-function labelText(d){return _shortNo(d.name);}
+function labelText(d){return _shortNo(d.name)+(isClosed(d)?' 폐전':'');}
 function addMarker(idx,d){
   const isDone=!!doneMap[d.id];
   const color=groupColor(d);
   const el=document.createElement('div');
-  el.className=`kk-marker ${groupCls(d)}${isDone?' done':''}`;
+  el.className=`kk-marker ${groupCls(d)}${isDone?' done':''}${isClosed(d)?' closed':''}`;
   el.id='mk-'+idx;
   el.style.position='relative';
   el.innerHTML=getMarkerIconHtml(d);
@@ -122,7 +129,7 @@ function addMarker(idx,d){
   // (예전엔 터치 기기에서만 만들었는데, 그러면 PC에서는 토글을 눌러도 아무 효과가 없어 보이는 문제가 있었음)
   const _labelColor=groupColor(d);
   const labelEl=document.createElement('div');
-  labelEl.style.cssText=`padding:1px 6px;font-size:10px;font-weight:700;color:${_labelColor};background:rgba(255,255,255,0.95);border:1px solid ${_labelColor};border-radius:9px;white-space:normal;max-width:104px;word-break:keep-all;text-align:center;line-height:1.3;box-shadow:0 1px 4px rgba(0,0,0,.2);pointer-events:auto;cursor:pointer;margin-top:13px`;
+  labelEl.style.cssText=`padding:1px 6px;font-size:11px;font-weight:700;color:${_labelColor};background:rgba(255,255,255,0.95);border:1px solid ${_labelColor};border-radius:9px;white-space:normal;max-width:104px;word-break:keep-all;text-align:center;line-height:1.3;box-shadow:0 1px 4px rgba(0,0,0,.2);pointer-events:auto;cursor:pointer;margin-top:13px`;
   // 누르면: 겹친 자리면 그 자리 소화전 목록(ovlTap), 아니면 바로 정보카드
   const tap=()=>{if(!ovlTap(idx))openIw();};
   labelEl.addEventListener('click',e=>{e.stopPropagation();tap();});
@@ -131,6 +138,7 @@ function addMarker(idx,d){
   labelEl.addEventListener('touchmove',()=>{_lbTouchMoved=true;},{passive:true});
   labelEl.addEventListener('touchend',e=>{e.stopPropagation();if(!_lbTouchMoved){e.preventDefault();tap();}},{passive:false});
   labelEl.textContent=labelText(d);
+  if(isClosed(d))labelEl.style.opacity='.65';
   const labelOverlay=new kakao.maps.CustomOverlay({
     position:new kakao.maps.LatLng(d.lat,d.lng),
     content:labelEl,
@@ -214,7 +222,7 @@ function renderPopup(iwEl,idx,d,iw){
   // 설치년도는 '소화전 종류' 줄 오른쪽에 따로 표시하고, 나머지 추가정보만 위치 아래에 표시
   const _isYearKey=k=>/^설치\s*(연|년)도$/.test(String(k).trim());
   const installYear=d.extra?(Object.entries(d.extra).find(([k])=>_isYearKey(k))||[])[1]:'';
-  const extraStr=d.extra?Object.entries(d.extra).filter(([k])=>k!=='_type'&&!_isYearKey(k)).map(([k,v])=>`${k}: ${v}`).join(' · '):'';
+  const extraStr=d.extra?Object.entries(d.extra).filter(([k])=>!String(k).startsWith('_')&&!_isYearKey(k)).map(([k,v])=>`${k}: ${v}`).join(' · '):'';
   const draft=hyGetDraft(idx,d);
   const st=hyStatusInfo(hydrantMap[d.id]);
   const savedRec=hydrantMap[d.id];
@@ -230,6 +238,8 @@ function renderPopup(iwEl,idx,d,iw){
       </div>`;
     return;
   }
+
+  if(isClosed(d)){renderClosedPopup(iwEl,idx,d);return;} // 폐전된 소화전은 전용 카드 (closed.js)
 
   iwEl.innerHTML=`
     <div class="iw-header">
@@ -262,12 +272,10 @@ function renderPopup(iwEl,idx,d,iw){
       <input type="date" value="${doneDate}" onchange="updateDoneDate(${idx},this.value)">
     </div>
 
+    <div id="hyForm-${idx}">
     <div class="hy-section">
       <div class="hy-label" style="display:flex;align-items:baseline;gap:6px">소화전 종류<span style="color:#dc2626;font-weight:800">(자동판별)</span>${installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치년도 ${esc(String(installYear))}</span>`:''}</div>
-      <div class="hy-toggle-row">
-        <button class="hy-tbtn${draft.hydrant_type==='ground'?' on':''}" onclick="hySetType(${idx},'ground')">🔴 지상식</button>
-        <button class="hy-tbtn${draft.hydrant_type==='underground'?' on':''}" onclick="hySetType(${idx},'underground')">🔵 지하식</button>
-      </div>
+      ${hyTypeButtons(idx,draft)}
     </div>
 
     <div class="hy-collapsible-row">
@@ -319,6 +327,8 @@ function renderPopup(iwEl,idx,d,iw){
       <textarea class="hy-defect" placeholder="고장 내용을 구체적으로 입력해주세요" oninput="hySetField(${idx},'defect_detail',this.value)" onblur="hySaveNow(${idx})">${esc(draft.defect_detail||'')}</textarea>`:''}
     </div>
 
+    </div>
+
     ${savedRec?`<div class="hy-saved-info">마지막 저장: ${esc(savedRec.insp_name||'')} · ${savedRec.updated_at?new Date(savedRec.updated_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div>`:''}
 
     <div class="iw-divider"></div>
@@ -351,7 +361,13 @@ function renderPopup(iwEl,idx,d,iw){
     <div class="iw-divider iw-done-bottom-divider"></div>
     <button class="iw-btn done-btn${isDone?' is-done':''} iw-done-bottom" id="doneBtn-${idx}" onclick="toggleDone(${idx})">
       ${isDone?'✓ 점검 완료 (취소)':'점검 완료시 클릭'}
-    </button>`;
+    </button>
+    <button class="iw-closed-btn admin-only" onclick="toggleClosed(${idx})" title="철거·폐전된 소화전이면 표시 (지우지 않고 진행률·인쇄에서만 제외)">🚫 폐전 처리</button>`;
 
+  // 비상소화장치(함)는 도색·보온·사용가부 대신 이상유무만 (hydrant-form.js)
+  if(hyIsSimpleType(draft.hydrant_type)){
+    const f=iwEl.querySelector('#hyForm-'+idx);
+    if(f)f.innerHTML=hyEmergencyFormHtml(idx,draft);
+  }
   renderPhotoGrid(idx,photos);
 }

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.2.4"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.5.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
@@ -103,3 +103,14 @@
 .ovl-chooser-row .tg{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:#e2e8f0;color:#475569}
 .ovl-chooser-row .tg.dn{background:#dcfce7;color:#15803d}
 .ovl-chooser-foot{font-size:10.5px;color:#94a3b8;padding:7px 4px 1px;line-height:1.4}
+
+/* ── 폐전 표시 ── (js/closed.js) 회색 마커 + ✕. 완료(초록)·조 색보다 우선 */
+.kk-marker.closed,.kk-marker.closed.done{background:#9ca3af!important;box-shadow:0 1px 3px rgba(0,0,0,.45)!important;opacity:.9}
+.kk-marker .mk-x{color:#fff;font:900 10px/1 sans-serif;pointer-events:none}
+.iw-closed-box{margin-top:8px;padding:9px 10px;border-radius:8px;background:#f3f4f6;border:1px solid #d1d5db;color:#4b5563;font-size:11.5px;line-height:1.55}
+.iw-closed-box b{color:#111827}
+.iw-closed-undo{display:block;width:100%;margin-top:8px;padding:7px;border:1px solid #9ca3af;border-radius:6px;background:#fff;color:#374151;font-size:11.5px;font-weight:700;cursor:pointer}
+.iw-closed-undo:hover{background:#e5e7eb}
+/* 일반 카드 맨 아래의 폐전 처리 버튼: 실수로 누르지 않게 눈에 덜 띄게 */
+.iw-closed-btn{display:block;margin:10px auto 0;padding:4px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;color:#9ca3af;font-size:10.5px;cursor:pointer}
+.iw-closed-btn:hover{color:#dc2626;border-color:#fecaca}

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){
@@ -19,14 +19,15 @@ function buildListItem(i){
   const color=groupColor(d);
   const noCoord=!(d.lat&&d.lng);
   const div=document.createElement('div');
-  div.className='item'+(isListHidden(d)?' hidden':'')+(isDone?' done-item':'');
+  div.className='item'+(isListHidden(d)?' hidden':'')+(isDone?' done-item':'')+(isClosed(d)?' closed-item':'');
   div.id=`item-${i}`;
-  div.innerHTML=`${pickMode?`<input type="checkbox" class="pick-chk" data-id="${d.id}" ${pickedIds.has(d.id)?'checked':''} onclick="event.stopPropagation();togglePicked(${d.id})">`:''}<div class="team-dot" style="background:${noCoord?'#94a3b8':color}"></div>
+  div.innerHTML=`${pickMode?`<input type="checkbox" class="pick-chk" data-id="${d.id}" ${pickedIds.has(d.id)?'checked':''} onclick="event.stopPropagation();togglePicked(${d.id})">`:''}<div class="team-dot" style="background:${(noCoord||isClosed(d))?'#94a3b8':color}"></div>
     <div class="ibody">
       <div class="iname">${esc(d.name)}</div>
       <div class="isub">${esc((d.address||'').replace('서울특별시 금천구 ',''))}</div>
       <div class="itags">
         ${d.group_name?`<span class="itag">${esc(d.group_name)}</span>`:''}
+        ${isClosed(d)?'<span class="itag" style="background:#e5e7eb;color:#374151">🚫 폐전</span>':''}
         ${hydrantMap[d.id]?`<span class="itag" style="background:${hyStatusInfo(hydrantMap[d.id]).bg};color:${hyStatusInfo(hydrantMap[d.id]).fg}">${hyStatusInfo(hydrantMap[d.id]).label}</span>`:''}
         ${isDone?'<span class="itag done-tag">✓ 완료</span>':''}
         ${memoMap[d.id]?'<span class="itag">📝 메모</span>':''}

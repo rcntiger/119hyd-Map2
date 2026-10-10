@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project.js — 홈 화면: 계획 목록 · 세분계획 · 구역 담당 팀 순환 · 계획 생성/수정/삭제 */
-AppFiles.reg('js/project.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Home / Project ══════════ */
 // 만료 배지 HTML 생성 (공통)
@@ -122,13 +122,18 @@ async function loadProjects(){
     // 건수 일괄 로드: 전체 items/done을 2번 쿼리로 가져와 JS 집계 (N+1 제거)
     // 세분계획별 진행률까지 계산해야 하므로 group_name과 item id도 함께 가져온다
     try{
+      // closed: 폐전 표시(extra._closed_at). 이 형태의 조회가 안 되는 환경이면 예전 방식으로 다시 받는다 (그때는 폐전도 개수에 포함됨)
       const [allItems,allDone]=await Promise.all([
-        SupabaseUtil.select('hydmap_items',{columns:'id,inspection_id,group_name'}),
+        SupabaseUtil.select('hydmap_items',{columns:'id,inspection_id,group_name,closed:extra->>_closed_at'})
+          .then(r=>{if(!Array.isArray(r))throw new Error('형식');return r;})
+          .catch(()=>SupabaseUtil.select('hydmap_items',{columns:'id,inspection_id,group_name'})),
         SupabaseUtil.select('hydmap_done',{columns:'item_id,inspection_id'})
       ]);
       const totalMap={},doneMap2={};
       const groupTotal={},groupDone={},itemGroup={};
+      const closedIds=new Set();
       if(Array.isArray(allItems))allItems.forEach(x=>{
+        if(x.closed){closedIds.add(x.id);return;} // 폐전은 개수에서 제외
         totalMap[x.inspection_id]=(totalMap[x.inspection_id]||0)+1;
         const g=String(x.group_name||'').trim();
         itemGroup[x.id]=g;
@@ -137,6 +142,7 @@ async function loadProjects(){
         }
       });
       if(Array.isArray(allDone))allDone.forEach(x=>{
+        if(closedIds.has(x.item_id))return;
         doneMap2[x.inspection_id]=(doneMap2[x.inspection_id]||0)+1;
         const g=itemGroup[x.item_id];
         if(g){

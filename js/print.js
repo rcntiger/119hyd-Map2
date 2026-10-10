@@ -1,10 +1,11 @@
 /* 119hyd-Map2 · js/print.js — 인쇄: 범위 선택 · 점검 목록표 */
-AppFiles.reg('js/print.js','v3.2.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print.js','v3.5.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 (전체 / 팀 / 조) ══════════ */
 // 범위 값: 'all' | 'team:1팀' | 'jo:1팀 2조'
 function _printTeams(){return [...new Set(groups.filter(g=>g.includes(' ')).map(g=>g.split(' ')[0]))];}
 function _inPrintScope(d,scope){
+  if(isClosed(d))return false; // 폐전은 목록표·지도 인쇄에서 제외
   const g=String(d.group_name||'').trim();
   // 세분계획 잠금 범위 밖은 어떤 경우에도 인쇄하지 않음
   if(teamFilterPrefix&&!(g===teamFilterPrefix||g.startsWith(teamFilterPrefix+' ')))return false;
@@ -130,7 +131,7 @@ function doPrint(){
     const a=_findAnchor();
     if(!a){showToast('기준 소화전을 찾을 수 없습니다. 번호를 확인해주세요 (좌표가 있는 소화전만 가능)','err');return;}
     const r=+document.getElementById('printRadius').value||300;
-    let near=items.filter(d=>d.lat&&d.lng&&_distM(a,d)<=r);
+    let near=items.filter(d=>d.lat&&d.lng&&_distM(a,d)<=r&&(d===a||!isClosed(d)));
     if(undoneOnly)near=near.filter(d=>d===a||!doneMap[d.id]);
     const opt={anchor:a,r,label:`${_shortNo(a.name)} 기준 반경 ${r>=1000?(r/1000)+'km':r+'m'}`};
     hideModal('printModal');
@@ -148,7 +149,7 @@ function doPrint(){
 // ── 점검 목록표: 새 창에 표 형태로 만들어 인쇄 (조별로 페이지 분리) ──
 function _printList(scope,list,opt){
   const A=opt?.anchor;
-  const typeTxt=d=>{const t=hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d);return t==='ground'?'지상':t==='underground'?'지하':'';};
+  const typeTxt=d=>{const t=hydrantMap[d.id]?.hydrant_type||getExcelHydrantType(d);return t==='ground'?'지상':t==='underground'?'지하':t==='emergency'?'비상':t==='ugdevice'?'지하장치':'';};
   const byGroup={};
   if(A)byGroup[opt.label]=list.slice();
   else list.forEach(d=>{const g=String(d.group_name||'').trim()||'(미지정)';(byGroup[g]=byGroup[g]||[]).push(d);});

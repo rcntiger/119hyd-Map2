@@ -49,7 +49,7 @@
 
 | 구분 | 사용 기술 |
 |---|---|
-| 프론트엔드 | 순수 HTML/CSS/JS — `css/` 9개 · `js/` 31개 파일 (프레임워크·번들러 없음) |
+| 프론트엔드 | 순수 HTML/CSS/JS — `css/` 9개 · `js/` 32개 파일 (프레임워크·번들러 없음) |
 | 지도 | Kakao Maps JS SDK (+ services 라이브러리: 지오코딩/장소검색) |
 | 백엔드 | Supabase (PostgreSQL + PostgREST + Storage) |
 | 사진 저장 | Cloudinary (unsigned upload preset) |
@@ -95,6 +95,7 @@ common의 기존 `config.js`(ConfigUtil)·`kakao.js`(KakaoUtil)는 이 앱에서
 │   ├── list.js             목록 그리기
 │   ├── nocoord.js          좌표 없는 소화전: 위치 지정 · 지도 없이 정보카드 · 모아 보기 버튼
 │   ├── overlap.js          같은 자리에 겹친 소화전: 묶음 계산 · 개수 배지 · 눌러서 고르기
+│   ├── closed.js           폐전 표시 (회색 마커 · 진행률과 인쇄에서 제외 · 되돌리기)
 │   ├── location.js         잘못된 위치 수정 · 좌표→주소 · 좌표 재검색 · 확인 핀
 │   ├── location-master.js  위치 원장 (hydmap_locations)
 │   ├── geocode.js          주소 → 좌표 (KakaoGeo · Nominatim)
