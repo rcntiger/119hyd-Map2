@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.8.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.8.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -130,7 +130,7 @@ function addMarker(idx,d){
   const _labelColor=groupColor(d);
   const labelEl=document.createElement('div');
   labelEl.className='hy-lbl'; // PC의 '이름표 투명' 설정이 이 class로 바탕·테두리를 지운다 (css/marker.css)
-  labelEl.style.cssText=`padding:1px 6px;font-size:11px;font-weight:700;color:${_labelColor};background:rgba(255,255,255,0.95);border:1px solid ${_labelColor};border-radius:9px;white-space:normal;max-width:104px;word-break:keep-all;text-align:center;line-height:1.3;box-shadow:0 1px 4px rgba(0,0,0,.2);pointer-events:auto;cursor:pointer;margin-top:13px`;
+  labelEl.style.cssText=`padding:1px 6px;font-size:13px;font-weight:700;color:${_labelColor};background:rgba(255,255,255,0.95);border:1px solid ${_labelColor};border-radius:9px;white-space:normal;max-width:120px;word-break:keep-all;text-align:center;line-height:1.3;box-shadow:0 1px 4px rgba(0,0,0,.2);pointer-events:auto;cursor:pointer;margin-top:13px`;
   // 누르면: 겹친 자리면 그 자리 소화전 목록(ovlTap), 아니면 바로 정보카드
   const tap=()=>{if(!ovlTap(idx))openIw();};
   labelEl.addEventListener('click',e=>{e.stopPropagation();tap();});
