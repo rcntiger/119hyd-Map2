@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.8.2';
+const APP_VERSION = 'v3.9.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -22,7 +22,7 @@ const AppFiles = {
   // 공통 모듈: 파일 → 그 파일이 만드는 전역 이름 (불러왔는지 확인용. null이면 확인 생략)
   // ※ common의 기존 config.js(ConfigUtil)·kakao.js(KakaoUtil)는 쓰지 않는다 — keys.js(APP_KEYS)·kakao-geo.js(KakaoGeo)와 별개 파일
   common: {'logger.js':null,'utils.js':'Utils','supabase.js':'SupabaseUtil','excel.js':'ExcelUtil','keys.js':'APP_KEYS','kakao-geo.js':'KakaoGeo'},
-  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','nocoord','overlap','closed','location','location-master','geocode','excel','export-original','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
+  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','marker','hydrant-form','photo','history','record','list','nocoord','overlap','label-layout','closed','location','location-master','geocode','excel','export-original','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
 
   loaded: {},                                   // js 파일이 스스로 적어 넣는 버전
   reg(name, ver) { this.loaded[name] = ver; },

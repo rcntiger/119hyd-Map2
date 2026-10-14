@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.8.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.9.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -141,6 +141,7 @@ function _calcZoomFlags(){
   return {far:!_zoomRuleOff&&lv>=ZOOM_FAR_LEVEL,lfar:!_zoomRuleOff&&lv>=LABEL_FAR_LEVEL};
 }
 function syncZoomVisibility(force){
+  scheduleLabelLayout(); // 축척이 바뀌면 이름표끼리 겹치는 곳이 달라지므로 다시 배치 (label-layout.js)
   const f=_calcZoomFlags();
   if(!force&&f.far===_zoomFar&&f.lfar===_labelFar)return; // 경계를 넘을 때만 처리
   _zoomFar=f.far;_labelFar=f.lfar;

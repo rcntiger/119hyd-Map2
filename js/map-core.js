@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-core.js — 카카오 지도 초기화 · 툴바 표시 · 진단 · 항목 활성화/전체 보기 */
-AppFiles.reg('js/map-core.js','v3.8.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-core.js','v3.9.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Kakao Map ══════════ */
 // 지도 툴바 표시 상태를 현재 상황에 맞게 맞춘다
@@ -38,6 +38,7 @@ function initKakaoMap(){
         // 모바일은 지도 보기 클릭 시 툴바 표시, PC는 항상 표시
         syncMapToolbars();
         kakao.maps.event.addListener(kakaoMap,'zoom_changed',()=>syncZoomVisibility(false));
+        kakao.maps.event.addListener(kakaoMap,'idle',scheduleLabelLayout); // 지도를 옮기거나 축척을 바꾼 뒤: 화면에 새로 들어온 이름표 배치
         const _f=_calcZoomFlags();_zoomFar=_f.far;_labelFar=_f.lfar;
         kakao.maps.event.addListener(kakaoMap,'click',(e)=>{
           document.getElementById('mapSearchResults').style.display='none';
