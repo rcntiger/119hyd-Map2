@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/label-layout.js — 이름표 겹침 피하기 (축척에 따라 가까운 소화전의 이름표가 부딪히면 빈 자리로 옮김) */
-AppFiles.reg('js/label-layout.js','v3.9.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/label-layout.js','v3.9.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* 이름표는 원래 마커 바로 아래에 붙는다 (marker.js: xAnchor .5, yAnchor 0, margin-top 13px).
    지도를 축소하면 위치가 다른 소화전끼리도 이름표가 화면에서 겹치므로,
@@ -17,11 +17,13 @@ function scheduleLabelLayout(){
   _lblTimer=setTimeout(()=>{_lblTimer=null;try{labelLayout();}catch(e){console.warn('이름표 배치 실패',e);}},30);
 }
 function _lblReset(el){if(el&&el.style.transform)el.style.transform='';}
-/* ── 연결선: 자리를 옮긴 이름표가 어느 마커 것인지 보이도록, 마커 → 이름표 가장 가까운 곳까지 조 색 선을 긋는다 ──
+/* ── 꼬리·연결선: 자리를 옮긴 이름표가 어느 마커 것인지 보이게 ──
+   - 바로 옆(위·좌우·대각선)으로 옮긴 이름표: 이름표 가장자리에서 마커 쪽으로 작은 조 색 꼬리(말풍선처럼)
+   - 한 칸 더 바깥으로 멀리 옮긴 이름표: 마커 → 이름표 가장 가까운 곳까지 조 색 연결선
    이름표 글자는 다른 곳(overlap.js)에서 통째로 바뀌므로 이름표 안에 넣지 않고, 마커 좌표에 붙는 별도 오버레이로 그린다.
    (지도를 끌어 옮기는 동안에도 마커·이름표와 함께 움직임) */
 const _lblLeaders=new Map(); // 대표 소화전 idx → {ov, el}
-function _lblLeader(i,pos,color,rx,ry){
+function _lblLeader(i,pos,color,rx,ry,mode,hEdge){
   let L=_lblLeaders.get(i);
   if(!L){
     const el=document.createElement('div');
@@ -30,13 +32,22 @@ function _lblLeader(i,pos,color,rx,ry){
     const ov=new kakao.maps.CustomOverlay({position:pos,content:el,xAnchor:0,yAnchor:0,zIndex:8}); // 이름표(9) 아래, 마커 위
     L={ov,el,key:''};_lblLeaders.set(i,L);
   }
-  // 마커 테두리(반지름 약 9px) 바깥에서 시작해 이름표 가장자리에서 끝남
-  const len=Math.hypot(rx,ry),sx=len?rx/len*9:0,sy=len?ry/len*9:0;
-  const key=[pos.getLat?pos.getLat():0,pos.getLng?pos.getLng():0,color,Math.round(rx),Math.round(ry)].join();
+  const len=Math.hypot(rx,ry),ux=len?rx/len:0,uy=len?ry/len:0;
+  const sx=ux*9,sy=uy*9; // 마커 테두리(반지름 약 9px) 바깥
+  const key=[pos.getLat?pos.getLat():0,pos.getLng?pos.getLng():0,color,Math.round(rx),Math.round(ry),mode].join();
   if(L.key!==key){
     L.key=key;
     L.ov.setPosition(pos);
-    L.el.innerHTML=`<svg style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none" width="1" height="1">`
+    const f=v=>v.toFixed(1);
+    if(mode==='tail'){
+      // 꼬리: 밑변은 이름표 가장자리 안쪽 1.5px(이름표 바탕에 가려 이어져 보임), 끝은 마커 쪽으로 최대 7px — 마커에는 닿지 않음
+      const k=Math.max(3,Math.min(7,len-10));
+      const bx=rx+ux*1.5,by=ry+uy*1.5; // 이름표 안쪽으로 1.5px
+      const tipx=rx-ux*k,tipy=ry-uy*k;
+      const a=hEdge?[bx-4.5,by]:[bx,by-4.5],b=hEdge?[bx+4.5,by]:[bx,by+4.5];
+      L.el.innerHTML=`<svg style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none" width="1" height="1">`
+        +`<path d="M${f(a[0])},${f(a[1])} L${f(tipx)},${f(tipy)} L${f(b[0])},${f(b[1])}Z" fill="${color}" stroke="#fff" stroke-width="1" stroke-linejoin="round" paint-order="stroke"/></svg>`;
+    }else L.el.innerHTML=`<svg style="position:absolute;left:0;top:0;overflow:visible;pointer-events:none" width="1" height="1">`
       +`<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${rx.toFixed(1)}" y2="${ry.toFixed(1)}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/>`
       +`<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${rx.toFixed(1)}" y2="${ry.toFixed(1)}" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/>`
       +`<circle cx="${rx.toFixed(1)}" cy="${ry.toFixed(1)}" r="2" fill="${color}"/></svg>`;
@@ -97,7 +108,7 @@ function labelLayout(){
       [x-LBL_GAP-8-w, y-h/2],
     ];
     let best=null;
-    for(const [l,t] of cand){
+    for(let ci=0;ci<cand.length;ci++){const [l,t]=cand[ci];
       const r={l,t,r:l+w,b:t+h};
       let lab=0,mk=0;
       for(const s of placed)lab+=area(r,s);
@@ -107,18 +118,19 @@ function labelLayout(){
         if(hit(r,s))mk+=area(r,s);
       }
       const score=lab*10+mk;
-      if(!best||score<best.score)best={r,score,l,t};
+      if(!best||score<best.score)best={r,score,l,t,ci};
       if(score===0)break;
     }
     placed.push(best.r);
     const dx=Math.round(best.l-(x-w/2)),dy=Math.round(best.t-(y+LBL_GAP));
     const tf=dx||dy?`translate(${dx}px,${dy}px)`:'';
     u.els.forEach(el=>{if(el.style.transform!==tf)el.style.transform=tf;});
-    // 원래 자리(마커 바로 아래)가 아니면 연결선 — 마커 중심 기준 이름표의 가장 가까운 점까지
+    // 원래 자리(마커 바로 아래)가 아니면: 바로 옆이면 꼬리, 한 칸 더 바깥(후보 8번째부터)이면 연결선
     if(tf){
       const l=best.l-x,t=best.t-y;
       const rx=Math.max(l,Math.min(0,l+w)),ry=Math.max(t,Math.min(0,t+h));
-      if(Math.hypot(rx,ry)>10){_lblLeader(u.i,u.pos,u.color,rx,ry);used.add(u.i);}
+      const hEdge=Math.abs(ry-t)<0.5||Math.abs(ry-(t+h))<0.5; // 꼬리가 위·아래 변에서 나오는지
+      if(Math.hypot(rx,ry)>10){_lblLeader(u.i,u.pos,u.color,rx,ry,best.ci>=8?'line':'tail',hEdge);used.add(u.i);}
     }
   });
   _lblLeaders.forEach((L,i)=>{if(!used.has(i))_lblLeaderOff(i);});
