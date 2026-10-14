@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-tools.js — 지도 도구: 확대/축소 · 툴팁 · 이름표 · 위성 · 거리재기 */
-AppFiles.reg('js/map-tools.js','v3.7.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-tools.js','v3.8.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 위성 ━━
 function mapZoomIn(){if(kakaoMap)kakaoMap.setLevel(kakaoMap.getLevel()-1,{animate:true});}
@@ -15,6 +15,22 @@ function _applyTooltipBtn(){
   document.getElementById('btnTipToggle')?.classList.toggle('on',tooltipOn);
   const t=document.getElementById('btnTipToggleTxt');
   if(t)t.textContent=tooltipOn?' 툴팁 ON':' 툴팁 OFF';
+}
+
+// ━━ 이름표 투명/불투명 (PC 전용) ━━
+// 투명: 이름표의 흰 바탕·테두리를 없애고 글자만 남김 (글자 둘레에 흰 테를 둘러 지도 위에서도 읽히게). 지도가 덜 가려진다.
+// body에 class를 붙이는 방식이라 이미 그려진 이름표에도 바로 적용된다. 휴대폰 화면에는 적용하지 않는다(css 참고).
+let labelClear=safeStorage.get('hy_label_clear')==='1';
+function toggleLabelClear(){
+  labelClear=!labelClear;
+  safeStorage.set('hy_label_clear',labelClear?'1':'0');
+  _applyLabelClear();
+}
+function _applyLabelClear(){
+  document.body.classList.toggle('lbl-clear',labelClear);
+  document.getElementById('btnLabelClear')?.classList.toggle('on',labelClear);
+  const t=document.getElementById('btnLabelClearTxt');
+  if(t)t.textContent=labelClear?' 이름표 투명':' 이름표 불투명';
 }
 
 function toggleLabelVisibility(){
