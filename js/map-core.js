@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-core.js — 카카오 지도 초기화 · 툴바 표시 · 진단 · 항목 활성화/전체 보기 */
-AppFiles.reg('js/map-core.js','v3.9.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-core.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Kakao Map ══════════ */
 // 지도 툴바 표시 상태를 현재 상황에 맞게 맞춘다
@@ -23,21 +23,21 @@ function initKakaoMap(){
       try{
         document.getElementById('mapPh').style.display='none';
         kakaoMap=new kakao.maps.Map(document.getElementById('map'),{center:new kakao.maps.LatLng(37.46,126.90),level:5});
-        clusterer=new kakao.maps.MarkerClusterer({
+        // 카카오 MarkerClusterer는 870개 기준 다시 묶을 때마다 약 3초 멈춰서 가벼운 격자 묶음으로 바꿈 (js/cluster.js, v3.9.3)
+        clusterer=new LiteClusterer({
           map:kakaoMap,
-          averageCenter:true,
           minLevel:6,
-          disableClickZoom:false,
-          styles:[{
-            width:'36px',height:'36px',background:'rgba(47,129,247,.85)',
-            borderRadius:'50%',color:'#fff',textAlign:'center',
-            fontWeight:'700',fontSize:'13px',lineHeight:'36px',
-            border:'2px solid #fff',boxShadow:'0 2px 6px rgba(0,0,0,.4)'
-          }]
+          gridSize:60,
+          style:'width:36px;height:36px;background:rgba(47,129,247,.85);border-radius:50%;color:#fff;text-align:center;'
+            +'font-weight:700;font-size:13px;line-height:36px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;box-sizing:content-box'
         });
         // 모바일은 지도 보기 클릭 시 툴바 표시, PC는 항상 표시
         syncMapToolbars();
-        kakao.maps.event.addListener(kakaoMap,'zoom_changed',()=>syncZoomVisibility(false));
+        kakao.maps.event.addListener(kakaoMap,'bounds_changed',()=>{_cullBox=null;}); // 화면 범위 캐시 비움 (filter.js)
+        kakao.maps.event.addListener(kakaoMap,'zoom_start',_mapMoveStart); // 확대·축소·끌기 중에는 마커를 새로 올리지 않음 (filter.js)
+        kakao.maps.event.addListener(kakaoMap,'dragstart',_mapMoveStart);
+        kakao.maps.event.addListener(kakaoMap,'zoom_changed',()=>{_cullBox=null;syncZoomVisibility(false);});
+        kakao.maps.event.addListener(kakaoMap,'idle',_cullSync); // 화면에 새로 들어온 마커·이름표 올리기 / 멀리 벗어난 것 내리기 (filter.js)
         kakao.maps.event.addListener(kakaoMap,'idle',scheduleLabelLayout); // 지도를 옮기거나 축척을 바꾼 뒤: 화면에 새로 들어온 이름표 배치
         const _f=_calcZoomFlags();_zoomFar=_f.far;_labelFar=_f.lfar;
         kakao.maps.event.addListener(kakaoMap,'click',(e)=>{

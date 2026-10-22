@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.9.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -53,6 +53,7 @@ function clearMapOverlays(){
   if(_bf){_bf.marks.forEach(r=>{r.marker.setMap(null);r.line?.setMap(null);});_bf=null;
     const b=document.getElementById('batchFixBar');if(b)b.style.display='none';
     document.getElementById('btnBatchFix')?.classList.remove('on');}
+  _ovQClear(); // 아직 올리지 못하고 줄에 남은 것도 비움 (filter.js)
   Object.values(overlays).forEach(o=>{o.overlay?.setMap(null);o.iw?.setMap(null);o.labelOverlay?.setMap(null);});
   if(typeof clearLabelLeaders==='function')clearLabelLeaders(); // 이름표 연결선 (label-layout.js)
   if(clusterer)clusterer.clear();
@@ -147,7 +148,7 @@ function addMarker(idx,d){
     xAnchor:0.5,yAnchor:0, // 라벨 위쪽 = 소화전 좌표, margin-top으로 아이콘 아래 3px 간격 (라벨 높이와 무관하게 일정)
     zIndex:9,
   });
-  if(labelsOn&&!isHidden(d)&&!_labelFar)labelOverlay.setMap(kakaoMap);
+  _ovSet(labelOverlay,labelsOn&&!isHidden(d)&&!_labelFar); // 화면 밖이면 기억만 해 두고 지도에는 나중에 올림 (filter.js _ovSet)
 
   const iwEl=document.createElement('div');
   iwEl.className='iw-wrap';
@@ -197,11 +198,9 @@ function addMarker(idx,d){
   // 성능: 처음부터 필터 상태대로 만든다. 예전엔 848개를 전부 지도에 올린 뒤 applyFilter가 800개를 다시 내려서
   //       조 카드로 들어갈 때마다 DOM 추가·삭제가 두 번씩 일어나 초기화가 느렸다.
   const hideNow=isHidden(d);
-  if(!hideNow&&!_zoomFar)overlay.setMap(kakaoMap);
-  // 클러스터러용 invisible 마커 (줌 레벨 6 이상에서 클러스터로 묶임)
-  // ⚠ opacity:0만으로는 클러스터러가 줌인 시 마커를 재표시할 때 카카오 기본 풍선 아이콘이 노출됨
-  //    → 완전 투명 1x1 PNG를 마커 이미지로 지정해 원천 차단
-  const clMarker=new kakao.maps.Marker({position:new kakao.maps.LatLng(d.lat,d.lng),image:getTransparentMarkerImage()});
+  _ovSet(overlay,!hideNow&&!_zoomFar); // 화면 밖이면 기억만 해 두고 지도에는 나중에 올림 (filter.js _ovSet)
+  // 묶음(클러스터) 계산용 점 — 지도에 그리지 않는 가벼운 객체 (js/cluster.js, 축척 6 이상에서 묶음 원으로 표시)
+  const clMarker=new LiteClPoint(new kakao.maps.LatLng(d.lat,d.lng));
   // 클러스터러에는 보이는 것만, 그리고 renderAllMarkers에서 한 번에 넣는다 (_clBatch)
   if(clusterer&&!hideNow){if(_clBatch)_clBatch.push(clMarker);else{clusterer.addMarker(clMarker);}}
   overlays[idx]={overlay,iw,clMarker,labelOverlay,hidden:hideNow,popupRendered:false,open:openIw}; // open: 겹침 선택 창에서 이 카드 열기

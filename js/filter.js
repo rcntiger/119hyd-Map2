@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.9.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -156,9 +156,80 @@ function syncZoomVisibility(force){
 // 이름표를 보여야 하는지: '이름 ON'이거나, 일괄 위치수정 중인 마커 (어느 번호를 옮기는지 알아야 하므로 항상 표시)
 function _labelWanted(d){return labelsOn||!!(_bf&&_bf.marks.has(d.id));}
 function setZoomRuleOff(off){_zoomRuleOff=!!off;syncZoomVisibility(true);}
+/* ── 화면 밖 마커는 지도에 올리지 않기 (v3.9.3) ──
+   카카오 CustomOverlay는 지도에 올릴 때마다 크기를 재느라 화면 전체 배치를 다시 계산한다.
+   870개를 한꺼번에 올리면 축척 6→5로 확대할 때 약 3초 멈췄다(측정: syncZoomVisibility 3.2초).
+   그래서 _ovSet은 "보여야 하는지"(ov.__want)만 기억하고, 실제로는 화면(+사방 50% 여유) 안의 것만 올린다.
+   지도를 옮기거나 축척을 바꾼 뒤(idle) _cullSync가 새로 들어온 것은 올리고, 멀리 벗어난 것은 내린다.
+   인쇄 미리보기 중(_zoomRuleOff)에는 예전처럼 전부 올린다. */
+let _cullBox=null; // 화면 범위 캐시 {s,w,n,e,dLat,dLng} — 지도가 움직이면 비움
+function _cullBounds(){
+  if(_cullBox)return _cullBox;
+  if(!kakaoMap||!kakaoMap.getBounds)return null;
+  const b=kakaoMap.getBounds();if(!b)return null;
+  const sw=b.getSouthWest(),ne=b.getNorthEast();
+  _cullBox={s:sw.getLat(),w:sw.getLng(),n:ne.getLat(),e:ne.getLng(),dLat:ne.getLat()-sw.getLat(),dLng:ne.getLng()-sw.getLng()};
+  return _cullBox;
+}
+// m: 화면 크기 대비 여유 비율 (올릴 때 0.5, 내릴 때 1.0 — 경계에서 올렸다 내렸다 반복하지 않게)
+function _ovInView(ov,m){
+  if(_zoomRuleOff)return true;
+  const B=_cullBounds();if(!B)return true;
+  const p=ov.getPosition&&ov.getPosition();if(!p)return true;
+  const lat=p.getLat(),lng=p.getLng(),pl=B.dLat*m,pg=B.dLng*m;
+  return lat>=B.s-pl&&lat<=B.n+pl&&lng>=B.w-pg&&lng<=B.e+pg;
+}
 function _ovSet(ov,on){
   if(!ov)return;
-  if(!!ov.getMap()!==on)ov.setMap(on?kakaoMap:null);
+  ov.__want=!!on;
+  if(!on){if(ov.getMap())ov.setMap(null);return;} // 내리는 것은 가벼우므로 바로
+  if(ov.getMap())return;
+  if(_zoomRuleOff){ov.setMap(kakaoMap);return;}  // 인쇄 미리보기: 예전처럼 바로 올림
+  if(_ovInView(ov,.5))_ovQueue(ov);               // 올리는 것은 줄을 세워 나눠서 (아래)
+}
+/* ── 올리기 줄 (v3.9.3) ──
+   지도를 확대·축소하거나 끄는 동안에 오버레이를 올리면 하나당 수 ms씩 걸려 수백 개면 몇 초 멈춘다.
+   그래서 줄에 넣어 두었다가, 지도가 멈춘 뒤(idle) 화면 가운데에 가까운 것부터 한 프레임에 약 12ms씩만 올린다.
+   지도는 계속 움직일 수 있고 마커는 가운데부터 빠르게 채워진다. */
+const _ovQ=new Set();let _ovQArr=[],_ovQRaf=0,_mapMoving=false;
+function _ovQueue(ov){_ovQ.add(ov);_ovQKick();}
+function _ovQKick(){if(_ovQRaf||_mapMoving||(!_ovQ.size&&!_ovQArr.length))return;_ovQRaf=requestAnimationFrame(_ovQStep);}
+function _ovQStep(){
+  _ovQRaf=0;
+  if(_mapMoving||!kakaoMap)return;
+  if(!_ovQArr.length&&_ovQ.size){
+    // 화면 가운데에서 가까운 순서로
+    const c=kakaoMap.getCenter(),cy=c.getLat(),cx=c.getLng();
+    _ovQArr=Array.from(_ovQ);_ovQ.clear();
+    _ovQArr.sort((a,b)=>{const p=a.getPosition(),q=b.getPosition();
+      return((q.getLat()-cy)**2+(q.getLng()-cx)**2)-((p.getLat()-cy)**2+(p.getLng()-cx)**2);}); // 먼 것이 앞 → pop()은 가까운 것부터
+  }
+  const t0=performance.now();
+  while(_ovQArr.length&&performance.now()-t0<12){
+    const ov=_ovQArr.pop();
+    if(ov.__want&&!ov.getMap()&&_ovInView(ov,.5))ov.setMap(kakaoMap);
+  }
+  if(_ovQArr.length||_ovQ.size)_ovQKick();
+  else scheduleLabelLayout(); // 다 올린 뒤 이름표 겹침 다시 배치
+}
+function _ovQClear(){_ovQ.clear();_ovQArr=[];if(_ovQRaf){cancelAnimationFrame(_ovQRaf);_ovQRaf=0;}} // 마커를 전부 지울 때 (marker.js clearMapOverlays)
+// 지도가 움직이기 시작/멈춤 (map-core.js에서 연결)
+function _mapMoveStart(){_mapMoving=true;_cullBox=null;if(_ovQRaf){cancelAnimationFrame(_ovQRaf);_ovQRaf=0;}}
+// 지도 이동·축척 변경이 끝난 뒤: 보여야 하는데 화면에 들어온 것은 줄에 넣고, 멀리 벗어난 것은 내린다
+function _cullSync(){
+  _mapMoving=false;
+  _cullBox=null;
+  if(!kakaoMap)return;
+  Object.values(overlays).forEach(o=>{
+    [o.overlay,o.labelOverlay].forEach(ov=>{
+      if(!ov||!ov.__want)return;
+      const on=!!ov.getMap();
+      if(!on){if(_ovInView(ov,.5))_ovQ.add(ov);}
+      else if(!_zoomRuleOff&&!_ovInView(ov,1))ov.setMap(null);
+    });
+  });
+  _ovQArr=[]; // 화면이 바뀌었으니 가까운 순서를 새로 정한다 (남은 것은 위에서 다시 줄에 들어감)
+  _ovQKick();
 }
 function applyFilter(){
   filterText=document.getElementById('searchInput').value.trim();

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project-open.js — 계획 열기/닫기 · 계획 데이터 불러오기 */
-AppFiles.reg('js/project-open.js','v3.9.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project-open.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 프로젝트 열기 ━━
 async function openProject(proj){
@@ -91,11 +91,14 @@ async function fetchProjectDataJoined(id){
   });
   // 임베딩된 결과에서 각 하위 데이터를 분리해 기존 코드와 동일한 배열 형태로 재구성
   const doneArr=[],memoArr=[],photosArr=[],hyArr=[];
+  // item_id에 UNIQUE가 걸린 표(예: hydmap_memo)는 PostgREST가 1:1로 보고 배열이 아니라 객체 하나(또는 null)로 준다.
+  // 예전엔 여기서 .forEach가 없어 오류 → 매번 5-쿼리 폴백으로 떨어졌다 (v3.9.3에서 수정)
+  const arr=v=>Array.isArray(v)?v:(v?[v]:[]);
   itemsRes.forEach(it=>{
-    (it.hydmap_done||[]).forEach(x=>doneArr.push(x));
-    (it.hydmap_memo||[]).forEach(x=>memoArr.push(x));
-    (it.hydmap_photos||[]).forEach(x=>photosArr.push(x));
-    (it.hydmap_records||[]).forEach(x=>hyArr.push(x));
+    arr(it.hydmap_done).forEach(x=>doneArr.push(x));
+    arr(it.hydmap_memo).forEach(x=>memoArr.push(x));
+    arr(it.hydmap_photos).forEach(x=>photosArr.push(x));
+    arr(it.hydmap_records).forEach(x=>hyArr.push(x));
     delete it.hydmap_done;delete it.hydmap_memo;delete it.hydmap_photos;delete it.hydmap_records;
   });
   // hydmap_photos는 created_at 오름차순이 필요 (원래 별도 쿼리에 order가 걸려있었음)

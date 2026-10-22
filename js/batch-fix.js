@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/batch-fix.js — 일괄 위치수정 (PC 전용) */
-AppFiles.reg('js/batch-fix.js','v3.9.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/batch-fix.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 일괄 위치수정 (PC 전용) ══════════
    현재 지도에 보이는(필터 적용된) 소화전을 끌어서 옮길 수 있는 마커로 바꾸고,
@@ -30,7 +30,7 @@ function toggleBatchFix(){
   _bf={marks:new Map(),changed:new Set(),dragId:null};
   targets.forEach(({d,i})=>{
     const o=overlays[i];
-    o?.overlay?.setMap(null); // 원래 마커는 잠시 숨김 (번호 라벨은 남겨서 어느 소화전인지 보이게)
+    _ovSet(o?.overlay,false); // 원래 마커는 잠시 숨김 (번호 라벨은 남겨서 어느 소화전인지 보이게)
     const pos=new kakao.maps.LatLng(d.lat,d.lng);
     const marker=new kakao.maps.Marker({position:pos,draggable:true,image:_bfImg(groupColor(d),false),title:`${d.name} (${(d.address||'').replace('서울특별시 금천구 ','')})`,zIndex:5});
     marker.setMap(kakaoMap);
