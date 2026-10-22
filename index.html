@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.10.1';
+const APP_VERSION = 'v3.11.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -473,22 +473,28 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
       <h3 style="margin:0">🔧 엑셀 재설정</h3>
       <button onclick="hideModal('resetOptModal')" style="background:none;border:none;color:var(--mt);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px">✕</button>
     </div>
-    <div style="background:rgba(255,123,114,.08);border:1px solid rgba(255,123,114,.25);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:12px;color:var(--hi);line-height:1.7">
-      ⚠️ 재설정하면 기존 점검 항목이 새 매핑으로 교체됩니다. 항목이 새로 생성되어 아래 기록은 더 이상 연결되지 않으니, 정리할 항목을 선택하세요.
+    <div style="background:rgba(47,129,247,.08);border:1px solid rgba(47,129,247,.25);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:12px;color:var(--tx);line-height:1.7">
+      원본 엑셀을 새 칸 연결로 다시 읽어 소화전 목록을 새로 만듭니다.<br>
+      <b>시설번호가 같은 소화전</b>(예: 금천-001595 = 001595)은 아래에서 고른 기록을 새 소화전으로 <b>이어받습니다</b>.
+      변경 이력과 폐전 표시는 항상 이어받습니다. 엑셀에서 빠진 소화전의 기록은 함께 지워집니다.
     </div>
     <div style="background:var(--sur2);border-radius:var(--r);padding:12px;margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--mt);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">기존 데이터 처리</div>
+      <div style="font-size:11px;font-weight:700;color:var(--mt);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">이어받을 기록 (끄면 지움)</div>
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px">
-        <input type="checkbox" id="resetDelDone" style="margin-top:2px;accent-color:var(--hi)">
-        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">점검 완료 기록 삭제</b><br><span style="color:var(--mt)">완료 여부 · 점검 일자</span></span>
+        <input type="checkbox" id="resetKeepRec" checked style="margin-top:2px;accent-color:var(--ac)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">점검 입력 결과</b><br><span style="color:var(--mt)">소화전 종류 · 도색 · 보온 · 사용가부 · 고장 내용</span></span>
       </label>
       <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px">
-        <input type="checkbox" id="resetDelMemo" style="margin-top:2px;accent-color:var(--hi)">
-        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">메모 삭제</b><br><span style="color:var(--mt)">각 항목에 입력한 메모</span></span>
+        <input type="checkbox" id="resetKeepDone" checked style="margin-top:2px;accent-color:var(--ac)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">점검 완료 기록</b><br><span style="color:var(--mt)">완료 여부 · 완료일</span></span>
       </label>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="checkbox" id="resetDelPhotos" style="margin-top:2px;accent-color:var(--hi)">
-        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">사진 삭제</b><br><span style="color:var(--mt)">Storage에서도 완전 삭제됨</span></span>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="resetKeepMemo" checked style="margin-top:2px;accent-color:var(--ac)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">메모</b><br><span style="color:var(--mt)">각 소화전에 입력한 메모</span></span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="resetKeepPhotos" checked style="margin-top:2px;accent-color:var(--ac)">
+        <span style="font-size:12px;line-height:1.5"><b style="color:var(--tx)">사진</b><br><span style="color:var(--mt)">사진 기록 (Cloudinary 원본은 지우지 않음)</span></span>
       </label>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">

@@ -1,11 +1,11 @@
 /* 119hyd-Map2 · js/excel.js — 엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용) */
-AppFiles.reg('js/excel.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/excel.js','v3.11.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Excel 업로드 / 컬럼 재설정 (공통 ExcelUtil.createReader 사용) ══════════ */
 let excelReader=null;
 let _excelMode='upload';     // 'upload'(전체 교체) | 'append'(새 번호만 추가) | 'reset' | 'export'(원본 형식으로 내려받기 — 데이터는 바꾸지 않음)
 let _excelOrigFile=null;     // 업로드 모드에서 Storage에 원본 저장할 File
-let _resetOpts={delDone:false,delMemo:false,delPhotos:false};
+let _resetOpts={rec:true,done:true,memo:true,photos:true}; // 재설정 때 이어받을 기록 (끄면 지움)
 
 function getExcelReader(){
   if(excelReader)return excelReader;
@@ -65,18 +65,13 @@ function startUpload(mode){
 async function showResetColModal(){
   if(!requireAdmin())return;
   if(!currentProject){showToast('프로젝트를 먼저 선택하세요','err');return;}
-  document.getElementById('resetDelDone').checked=false;
-  document.getElementById('resetDelMemo').checked=false;
-  document.getElementById('resetDelPhotos').checked=false;
+  ['resetKeepRec','resetKeepDone','resetKeepMemo','resetKeepPhotos'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=true;});
   showModal('resetOptModal');
 }
 async function proceedReset(){
   hideModal('resetOptModal');
-  _resetOpts={
-    delDone:document.getElementById('resetDelDone').checked,
-    delMemo:document.getElementById('resetDelMemo').checked,
-    delPhotos:document.getElementById('resetDelPhotos').checked,
-  };
+  const on=id=>!!document.getElementById(id)?.checked;
+  _resetOpts={rec:on('resetKeepRec'),done:on('resetKeepDone'),memo:on('resetKeepMemo'),photos:on('resetKeepPhotos')};
   showToast('원본 파일 확인 중...','');
   try{
     const file=await fetchOriginalFile(); // export-original.js
@@ -213,7 +208,7 @@ function upProgEnd(){
 //   지금: 좌표는 5개씩 동시에(같은 주소는 한 번만, 엑셀에 위도·경도가 있으면 건너뜀), 저장은 100행씩 묶어서
 //         묶음 저장이 실패하면 그 묶음만 한 행씩 다시 시도해 어느 소화전이 실패했는지 알려 준다
 const GEO_WORKERS=5,INSERT_CHUNK=100;
-async function _insertParsedItems(parsed,pid,verb){
+async function _insertParsedItems(parsed,pid,verb,outRows){ // outRows: 넣은 행(새 id 포함)을 담아 받을 배열 (재설정이 씀)
   let ok=0;
   const errors=[]; // {name, message}
   // ① 좌표 찾기 (엑셀에 위도·경도가 없는 것만)
@@ -242,12 +237,13 @@ async function _insertParsedItems(parsed,pid,verb){
     upProg(`${verb}: 저장 중`,i,recs.length);
     const chunk=recs.slice(i,i+INSERT_CHUNK);
     try{
-      await SupabaseUtil.insert('hydmap_items',chunk);
+      const got=await SupabaseUtil.insert('hydmap_items',chunk);
       ok+=chunk.length;
+      if(outRows)(got||[]).forEach(r=>outRows.push(r));
     }catch(e){
       console.warn('묶음 저장 실패, 한 행씩 다시',e);
       for(const r of chunk){
-        try{await SupabaseUtil.insert('hydmap_items',r);ok++;}
+        try{const got=await SupabaseUtil.insert('hydmap_items',r);ok++;if(outRows)(got||[]).forEach(x=>outRows.push(x));}
         catch(e2){console.error(`[업로드 실패] ${r.name}:`,e2);errors.push({name:r.name,message:e2?.message||String(e2)});}
       }
     }
@@ -326,9 +322,34 @@ async function _runAppend(parsed){
   showToast(`✅ ${ok}/${fresh.length}개 추가 · 기존 ${exist}개는 그대로`+(newG.length?` · 새 조(${newG.join(', ')})가 생겼습니다 — 홈에서 세분계획을 갱신하세요`:''),ok===fresh.length?'ok':'err');
 }
 
+/* ══════════ 엑셀 재설정 — 기록 이어받기 (v3.11.0) ══════════
+   예전 방식: 기존 소화전을 모두 지우고 새로 넣었다. 점검 기록(완료·메모·사진·점검 입력)은 소화전 id에 묶여 있어
+   새 소화전으로 옮겨 갈 수 없었고, DB 연결(외래키) 때문에 기록이 하나라도 있으면 소화전을 지울 수 없어 재설정이 실패했다.
+   지금 방식:
+     ① 새 소화전을 먼저 넣는다 (하나라도 실패하면 새로 넣은 것을 지우고 멈춤 — 기존 데이터는 그대로)
+     ② 시설번호가 같은 기존 소화전(_nameKey: 금천-001595 = 금천-1595 = 001595)과 짝지어
+        고른 기록과 변경 이력의 소화전 id를 새 것으로 바꾼다. 폐전 표시도 옮긴다.
+     ③ 남은 기록(짝이 없거나 이어받지 않기로 한 것)을 지우고, 기존 소화전을 지운다. */
+// 여러 요청을 n개씩 동시에
+async function _runPool(tasks,n,onDone){
+  let i=0,done=0;
+  const worker=async()=>{while(i<tasks.length){const t=tasks[i++];await t();done++;onDone?.(done,tasks.length);}};
+  await Promise.all(Array.from({length:Math.min(n,tasks.length)},worker));
+}
+// id 목록을 나눠서 지우기 (한 번에 너무 많은 id를 주소에 넣지 않도록 200개씩)
+async function _deleteByIds(table,col,ids,extraEq){
+  const c=SupabaseUtil.getClient();
+  for(let i=0;i<ids.length;i+=200){
+    let q=c.from(table).delete().in(col,ids.slice(i,i+200));
+    if(extraEq)Object.entries(extraEq).forEach(([k,v])=>{q=q.eq(k,v);});
+    const {error}=await q;
+    if(error)throw new Error(`${table} 삭제: ${error.message}`);
+  }
+}
 async function _runReset(parsed){
   const pid=currentProject.id;
-  const {delDone,delMemo,delPhotos}=_resetOpts;
+  const keep=_resetOpts;
+  const olds=items.slice(); // 지금 불러온 기존 소화전 (1000개 넘어도 전부 — sbSelectAll)
   try{
     // 새로 선택한 원본 파일을 Storage에 백업 (실패해도 재설정 자체는 계속 진행)
     if(_excelOrigFile){
@@ -337,22 +358,71 @@ async function _runReset(parsed){
         await SupabaseUtil.uploadFile('hydmap-files',path,_excelOrigFile);
       }catch(e){console.warn('원본 파일 백업 저장 실패 (재설정은 계속 진행됨)',e);}
     }
-    if(delPhotos){
-      upProg('재설정: 사진 기록 지우는 중',0,0);
-      // 사진은 Cloudinary에 저장되므로 DB 기록만 삭제 (Cloudinary 원본은 남음)
-      await SupabaseUtil.remove('hydmap_photos',{inspection_id:pid});
+    // ① 새 소화전 넣기
+    const news=[];
+    const ok=await _insertParsedItems(parsed,pid,'재설정',news);
+    if(ok<parsed.length||news.length<ok){
+      upProg('재설정: 실패 — 새로 넣은 것 되돌리는 중',0,0);
+      const ids=news.map(r=>r.id).filter(x=>x!=null);
+      try{await _deleteByIds('hydmap_items','id',ids);}catch(e){console.error('되돌리기 실패',e);}
+      showToast(`재설정을 멈췄습니다 — 새 소화전 ${parsed.length-ok}개 저장 실패. 기존 데이터는 그대로입니다`,'err');
+      await loadProjectData();
+      return;
     }
-    if(delMemo){upProg('재설정: 메모 지우는 중',0,0);await SupabaseUtil.remove('hydmap_memo',{inspection_id:pid});}
-    if(delDone){upProg('재설정: 완료 기록 지우는 중',0,0);await SupabaseUtil.remove('hydmap_done',{inspection_id:pid});}
-
-    upProg('재설정: 기존 항목 지우는 중',0,0);
-    await SupabaseUtil.remove('hydmap_items',{inspection_id:pid});
-
-    const ok=await _insertParsedItems(parsed,pid,'재설정');
-    showToast(`✅ 재설정 완료 (${ok}/${parsed.length}개)`,'ok');
+    // ② 짝짓기: 시설번호가 같은 기존 소화전 → 새 소화전
+    const pool=new Map(); // 번호 → [기존 소화전…]
+    const keyOf=name=>{const k=_nameKey(String(name).trim());return k.num===null?'raw:'+String(name).trim():'n:'+k.num;};
+    olds.forEach(o=>{const k=keyOf(o.name);if(!pool.has(k))pool.set(k,[]);pool.get(k).push(o);});
+    const pairs=[]; // [기존, 새]
+    news.forEach(n=>{
+      const cand=pool.get(keyOf(n.name));if(!cand||!cand.length)return;
+      const nk=_nameKey(String(n.name).trim());
+      // 지역명까지 같은 것을 먼저, 없으면 지역명이 비어 있는 쪽과
+      let j=cand.findIndex(o=>_nameKey(String(o.name).trim()).pre===nk.pre);
+      if(j<0)j=cand.findIndex(o=>{const p=_nameKey(String(o.name).trim()).pre;return p===''||nk.pre==='';});
+      if(j<0)return;
+      pairs.push([cand[j],n]);cand.splice(j,1);
+    });
+    // 변경 이력이 있는 기존 소화전 (이력은 항상 이어받음)
+    let histIds=new Set();
+    try{histIds=new Set((await sbSelectAll('hydmap_history',{eq:{inspection_id:pid},columns:'item_id'})).map(h=>h.item_id));}
+    catch(e){console.warn('이력 조회 실패 — 이력은 옮기지 않음',e);}
+    const c=SupabaseUtil.getClient();
+    const move=(table,o,n)=>async()=>{
+      const {error}=await c.from(table).update({item_id:n.id}).eq('item_id',o.id).eq('inspection_id',pid);
+      if(error)throw new Error(`${table} 이어받기: ${error.message}`);
+    };
+    const tasks=[];
+    let cnt={rec:0,done:0,memo:0,photos:0,closed:0};
+    pairs.forEach(([o,n])=>{
+      if(keep.rec&&hydrantMap[o.id]){tasks.push(move('hydmap_records',o,n));cnt.rec++;}
+      if(keep.done&&doneMap[o.id]){tasks.push(move('hydmap_done',o,n));cnt.done++;}
+      if(keep.memo&&memoMap[o.id]){tasks.push(move('hydmap_memo',o,n));cnt.memo++;}
+      if(keep.photos&&photoMap[o.id]?.length){tasks.push(move('hydmap_photos',o,n));cnt.photos++;}
+      if(histIds.has(o.id))tasks.push(move('hydmap_history',o,n));
+      // 폐전 표시: 새 엑셀에 '폐전' 칸이 없어 표시가 빠졌으면 옮김
+      if(isClosed(o)&&!(n.extra&&n.extra._closed_at)){
+        const extra={...(n.extra||{}),_closed_at:o.extra._closed_at,_closed_by:o.extra._closed_by||''};
+        tasks.push(async()=>{await SupabaseUtil.update('hydmap_items',{extra},{id:n.id});});
+        cnt.closed++;
+      }
+    });
+    upProg('재설정: 기록 이어받는 중',0,tasks.length);
+    await _runPool(tasks,6,(d,t)=>{if(d%5===0||d===t)upProg('재설정: 기록 이어받는 중',d,t);});
+    // ③ 남은 기록과 기존 소화전 지우기
+    const oldIds=olds.map(o=>o.id);
+    upProg('재설정: 남은 기록 정리 중',0,0);
+    for(const t of ['hydmap_records','hydmap_done','hydmap_memo','hydmap_photos'])await _deleteByIds(t,'item_id',oldIds,{inspection_id:pid});
+    upProg('재설정: 기존 소화전 지우는 중',0,0);
+    await _deleteByIds('hydmap_items','id',oldIds,{inspection_id:pid});
+    const unmatched=olds.length-pairs.length;
+    showToast(`✅ 재설정 완료 — 새 소화전 ${ok}개 · 이어받음: 점검 입력 ${cnt.rec} · 완료 ${cnt.done} · 메모 ${cnt.memo} · 사진 ${cnt.photos}`
+      +(cnt.closed?` · 폐전 ${cnt.closed}`:'')+(unmatched?` · 새 엑셀에 없는 기존 소화전 ${unmatched}개는 지움`:''),'ok');
     await loadProjectData();
   }catch(e){
-    showToast('재설정 실패: '+e.message,'err');
+    console.error('재설정 오류',e);
+    showToast('재설정 중 오류: '+e.message+' — 화면을 다시 불러옵니다. 결과를 확인해 주세요','err');
+    await loadProjectData();
   }
 }
 
