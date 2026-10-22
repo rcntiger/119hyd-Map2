@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/excel.js — 엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용) */
-AppFiles.reg('js/excel.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/excel.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Excel 업로드 / 컬럼 재설정 (공통 ExcelUtil.createReader 사용) ══════════ */
 let excelReader=null;
@@ -181,41 +181,78 @@ async function _onExcelConfirm(headers,rows,mapping){
   const masterN=await applyLocationMaster(parsed);
   if(masterN)showToast(`보정 위치 ${masterN}개를 적용해 올립니다`,'ok');
 
-  if(_excelMode==='reset'){
-    await _runReset(parsed);
-  }else if(_excelMode==='append'){
-    await _runAppend(parsed);
-  }else{
-    await _runUpload(parsed);
-  }
+  try{
+    if(_excelMode==='reset'){
+      await _runReset(parsed);
+    }else if(_excelMode==='append'){
+      await _runAppend(parsed);
+    }else{
+      await _runUpload(parsed);
+    }
+  }finally{if(_uploading)upProgEnd();} // 끝나거나 실패해도 진행바를 점검 진행률로 되돌림
 }
 
-// 지오코딩 + DB 삽입을 3개씩 병렬 배치로 처리 (완전 순차 대비 약 3배 빠름).
-// 카카오 로컬 API 쿼터를 고려해 동시 3개로 제한하고, 배치 사이에 짧게 쉰다.
-const GEOCODE_BATCH_SIZE=3;
+// ━━ 업로드 진행바 ━━ 사이드바의 점검 진행률 막대를 업로드·추가·재설정 중에는 업로드 진행 표시로 쓴다 (v3.10.0)
+let _uploading=false;
+function upProg(text,done,total){
+  _uploading=true;
+  const pct=total?Math.min(100,Math.round(done/total*100)):0;
+  document.querySelector('.prog-wrap')?.classList.add('uploading');
+  const f=document.getElementById('progFill'),t=document.getElementById('progPctText');
+  if(f)f.style.width=(total?pct:100)+'%'; // 단계만 있는 표시(삭제 중 등)는 꽉 찬 막대에 글자만
+  if(t)t.textContent=total?`${text} ${done}/${total} (${pct}%)`:text;
+}
+function upProgEnd(){
+  _uploading=false;
+  document.querySelector('.prog-wrap')?.classList.remove('uploading');
+  updateStats(); // 다시 점검 진행률로
+}
+
+// 좌표 찾기와 저장
+//   예전: 3개씩 [좌표 찾기 → 1행 저장]을 묶어 기다리고, 묶음마다 0.06초 쉼 → 868개면 저장 요청 868번
+//   지금: 좌표는 5개씩 동시에(같은 주소는 한 번만, 엑셀에 위도·경도가 있으면 건너뜀), 저장은 100행씩 묶어서
+//         묶음 저장이 실패하면 그 묶음만 한 행씩 다시 시도해 어느 소화전이 실패했는지 알려 준다
+const GEO_WORKERS=5,INSERT_CHUNK=100;
 async function _insertParsedItems(parsed,pid,verb){
-  let done=0,ok=0;
-  const errors=[]; // {name, message} 수집 — 지금까지 catch{}로 완전히 숨겨져서 원인을 알 수 없었음
-  for(let i=0;i<parsed.length;i+=GEOCODE_BATCH_SIZE){
-    const batch=parsed.slice(i,i+GEOCODE_BATCH_SIZE);
-    await Promise.all(batch.map(async d=>{
-      let lat=d.lat,lng=d.lng;
-      // 엑셀에 이미 유효한 위도/경도가 있으면 지오코딩을 건너뛴다 (더 정확하고 더 빠름)
-      if(!(lat&&lng)){
-        try{const geo=await geocodeAddr(d.address);if(geo){lat=geo.lat;lng=geo.lng;}}catch{}
+  let ok=0;
+  const errors=[]; // {name, message}
+  // ① 좌표 찾기 (엑셀에 위도·경도가 없는 것만)
+  const addrs=[...new Set(parsed.filter(d=>!(d.lat&&d.lng)&&d.address).map(d=>d.address))];
+  const geo=new Map();
+  if(addrs.length){
+    let gi=0,gdone=0;
+    upProg(`${verb}: 좌표 찾는 중`,0,addrs.length);
+    const worker=async()=>{
+      while(gi<addrs.length){
+        const a=addrs[gi++];
+        try{geo.set(a,await geocodeAddr(a));}catch{geo.set(a,null);}
+        gdone++;
+        if(gdone%5===0||gdone===addrs.length)upProg(`${verb}: 좌표 찾는 중`,gdone,addrs.length);
       }
-      try{
-        await SupabaseUtil.insert('hydmap_items',{inspection_id:pid,name:d.name,address:d.address,group_name:d.group_name||null,lat,lng,extra:d.extra||null,loc_fixed_at:d.loc_fixed_at||null});
-        ok++;
-      }catch(e){
-        console.error(`[업로드 실패] ${d.name}:`,e);
-        errors.push({name:d.name,message:e?.message||String(e)});
-      }
-      done++;
-      showToast(`(${done}/${parsed.length}) ${verb} 중...`,'');
-    }));
-    await sleep(60);
+    };
+    await Promise.all(Array.from({length:Math.min(GEO_WORKERS,addrs.length)},worker));
   }
+  // ② 저장 (100행씩)
+  const recs=parsed.map(d=>{
+    let lat=d.lat,lng=d.lng;
+    if(!(lat&&lng)){const g=geo.get(d.address);lat=g?g.lat:null;lng=g?g.lng:null;}
+    return {inspection_id:pid,name:d.name,address:d.address,group_name:d.group_name||null,lat,lng,extra:d.extra||null,loc_fixed_at:d.loc_fixed_at||null};
+  });
+  for(let i=0;i<recs.length;i+=INSERT_CHUNK){
+    upProg(`${verb}: 저장 중`,i,recs.length);
+    const chunk=recs.slice(i,i+INSERT_CHUNK);
+    try{
+      await SupabaseUtil.insert('hydmap_items',chunk);
+      ok+=chunk.length;
+    }catch(e){
+      console.warn('묶음 저장 실패, 한 행씩 다시',e);
+      for(const r of chunk){
+        try{await SupabaseUtil.insert('hydmap_items',r);ok++;}
+        catch(e2){console.error(`[업로드 실패] ${r.name}:`,e2);errors.push({name:r.name,message:e2?.message||String(e2)});}
+      }
+    }
+  }
+  upProg(`${verb}: 저장 완료`,recs.length,recs.length);
   if(errors.length){
     console.error(`총 ${errors.length}건 삽입 실패:`,errors);
     // 첫 실패 건의 실제 원인을 화면에 노출 (RLS/컬럼명/제약조건 오류 등을 바로 확인할 수 있도록)
@@ -241,7 +278,7 @@ async function _runUpload(parsed){
   // 기존 데이터가 있으면 새 엑셀로 완전히 교체 (중복 생성 방지)
   if(items.length>0){
     try{
-      showToast('기존 데이터 삭제 중...','');
+      upProg('업로드: 기존 데이터 지우는 중',0,0);
       await SupabaseUtil.remove('hydmap_photos',{inspection_id:pid});
       await SupabaseUtil.remove('hydmap_memo',{inspection_id:pid});
       await SupabaseUtil.remove('hydmap_done',{inspection_id:pid});
@@ -301,14 +338,14 @@ async function _runReset(parsed){
       }catch(e){console.warn('원본 파일 백업 저장 실패 (재설정은 계속 진행됨)',e);}
     }
     if(delPhotos){
-      showToast('사진 기록 삭제 중...','');
+      upProg('재설정: 사진 기록 지우는 중',0,0);
       // 사진은 Cloudinary에 저장되므로 DB 기록만 삭제 (Cloudinary 원본은 남음)
       await SupabaseUtil.remove('hydmap_photos',{inspection_id:pid});
     }
-    if(delMemo){showToast('메모 삭제 중...','');await SupabaseUtil.remove('hydmap_memo',{inspection_id:pid});}
-    if(delDone){showToast('완료 기록 삭제 중...','');await SupabaseUtil.remove('hydmap_done',{inspection_id:pid});}
+    if(delMemo){upProg('재설정: 메모 지우는 중',0,0);await SupabaseUtil.remove('hydmap_memo',{inspection_id:pid});}
+    if(delDone){upProg('재설정: 완료 기록 지우는 중',0,0);await SupabaseUtil.remove('hydmap_done',{inspection_id:pid});}
 
-    showToast('기존 항목 삭제 중...','');
+    upProg('재설정: 기존 항목 지우는 중',0,0);
     await SupabaseUtil.remove('hydmap_items',{inspection_id:pid});
 
     const ok=await _insertParsedItems(parsed,pid,'재설정');

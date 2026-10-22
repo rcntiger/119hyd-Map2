@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.9.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -267,6 +267,7 @@ function applyFilter(){
 
 // ━━ 통계 ━━
 function updateStats(){
+  if(typeof _uploading!=='undefined'&&_uploading)return; // 업로드 중에는 진행바를 업로드 표시로 씀 (excel.js upProg)
   const filtered=items.filter(d=>!isHidden(d)&&!isClosed(d)); // 폐전은 진행률에서 제외
   const tot=filtered.length;
   const done=filtered.filter(d=>doneMap[d.id]).length;
