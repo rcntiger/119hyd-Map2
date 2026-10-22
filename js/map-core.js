@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/map-core.js — 카카오 지도 초기화 · 툴바 표시 · 진단 · 항목 활성화/전체 보기 */
-AppFiles.reg('js/map-core.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/map-core.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Kakao Map ══════════ */
 // 지도 툴바 표시 상태를 현재 상황에 맞게 맞춘다
@@ -67,7 +67,8 @@ function setActive(idx){
   const el=document.getElementById(`item-${idx}`);
   if(el){el.classList.add('active');el.scrollIntoView({block:'nearest'});}
 }
-function closeIw(){ovlCloseChooser();ncCloseCard();if(iwOpen){iwOpen.setMap(null);iwOpen=null;}if(activeMarkerEl){activeMarkerEl.classList.remove('active-mk');activeMarkerEl=null;}}
+function closeIw(){ovlCloseChooser();ncCloseCard();flushPendingMemos(); // 저장을 기다리던 메모는 카드가 사라지기 전에 저장 (record.js)
+  if(iwOpen){iwOpen.setMap(null);iwOpen=null;}if(activeMarkerEl){activeMarkerEl.classList.remove('active-mk');activeMarkerEl=null;}}
 function fitAll(){
   if(!kakaoMap)return;
   // 그룹/검색 필터로 숨겨진 항목은 제외하고, 현재 화면에 보이는 대상만 기준으로 범위를 잡는다

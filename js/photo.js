@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/photo.js — 사진: 썸네일 · 압축 · Cloudinary 업로드 · 뷰어 · 바텀시트 */
-AppFiles.reg('js/photo.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/photo.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Photo Grid ══════════ */
 function renderPhotoGrid(idx,photos){
@@ -70,7 +70,10 @@ async function uploadPhotoFile(idx,file){
     if(!photoMap[d.id])photoMap[d.id]=[];
     photoMap[d.id].push(photo);
     logHistory(d,'사진 추가',{url});
-    renderPhotoGrid(idx,photoMap[d.id]);
+    if(items[idx]===d){ // 올리는 동안 다른 계획을 열지 않았을 때만 화면 갱신
+      renderPhotoGrid(idx,photoMap[d.id]);
+      if(document.getElementById(`item-${idx}`))updateListItem(idx); // 목록의 📷 개수 (v3.10.1)
+    }
     showToast(`사진 저장됨 (${kb}KB)`,'ok');
   }catch(e){showToast('업로드 실패: '+e.message,'err');console.error('uploadPhoto error:',e);}
 }
@@ -83,10 +86,12 @@ async function uploadPhoto(idx,input){
 async function deletePhoto(idx,photoId,url){
   if(!confirm('사진을 삭제하시겠습니까? (기록만 삭제되며 Cloudinary 원본은 남습니다)'))return;
   const d=items[idx];if(!d)return;
-  await SupabaseUtil.remove('hydmap_photos',{id:photoId});
+  try{await SupabaseUtil.remove('hydmap_photos',{id:photoId});}
+  catch(e){showToast('사진 삭제 실패: '+(e?.message||''),'err');return;}
   logHistory(d,'사진 삭제',{url});
   if(photoMap[d.id])photoMap[d.id]=photoMap[d.id].filter(p=>String(p.id)!==String(photoId));
   renderPhotoGrid(idx,photoMap[d.id]||[]);
+  if(document.getElementById(`item-${idx}`))updateListItem(idx); // 목록의 📷 개수 (v3.10.1)
   showToast('사진 삭제됨','ok');
 }
 function openPhotoViewer(url,caption){

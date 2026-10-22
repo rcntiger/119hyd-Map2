@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -206,7 +206,12 @@ function hyMaybeAutoSave(idx){
   const draft=hyGetDraft(idx,d);
   if(!(draft.hydrant_type&&draft.result))return;
   clearTimeout(_autoSaveTimers[idx]);
-  _autoSaveTimers[idx]=setTimeout(()=>hySaveNow(idx),AUTOSAVE_DEBOUNCE_MS);
+  _autoSaveTimers[idx]=setTimeout(()=>{delete _autoSaveTimers[idx];hySaveNow(idx);},AUTOSAVE_DEBOUNCE_MS);
+}
+// 저장을 기다리는(0.6초) 점검 입력을 지금 저장 — 다른 계획·홈으로 가기 직전 (v3.10.1)
+// 그대로 두면 계획이 바뀐 뒤 같은 번호(idx)의 다른 소화전으로 저장이 실행될 수 있었다.
+function flushPendingAutoSaves(){
+  Object.keys(_autoSaveTimers).forEach(k=>{clearTimeout(_autoSaveTimers[k]);delete _autoSaveTimers[k];hySaveNow(+k);});
 }
 async function hySaveNow(idx){
   const d=items[idx];if(!d||!currentProject)return;
@@ -234,7 +239,8 @@ async function hySaveNow(idx){
   try{
     const saved=await SupabaseUtil.upsert('hydmap_records',record,'item_id');
     const changes=_hyDiff(prevRec,record);
-    if(changes.length)logHistory(d,'점검 입력',{changes});
+    if(changes.length)logHistory(d,'점검 입력',{changes},record.inspection_id);
+    if(items[idx]!==d)return; // 저장하는 동안 다른 계획을 열었으면 화면은 건드리지 않음
     hydrantMap[d.id]=Array.isArray(saved)?(saved[0]||record):(saved||record);
     // 저장 중 추가 변경이 없었을 때만 draft를 비운다 (있으면 최신 draft 유지 후 재저장)
     if(!_saveQueued[idx])delete hyDraft[idx];

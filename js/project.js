@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project.js — 홈 화면: 계획 목록 · 세분계획 · 구역 담당 팀 순환 · 계획 생성/수정/삭제 */
-AppFiles.reg('js/project.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Home / Project ══════════ */
 // 만료 배지 HTML 생성 (공통)
@@ -23,7 +23,7 @@ async function generateSubPlans(parentId){
   if(!parent){showToast('계획을 찾을 수 없습니다','err');return;}
   showToast('구역/조 정보 확인 중...','');
   try{
-    const rows=await SupabaseUtil.select('hydmap_items',{eq:{inspection_id:parentId},columns:'group_name'});
+    const rows=await sbSelectAll('hydmap_items',{eq:{inspection_id:parentId},columns:'group_name'}); // 1000개 넘어도 전부
     const groups=[...new Set((rows||[]).map(r=>String(r.group_name||'').trim()).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,'ko',{numeric:true,sensitivity:'base'}));
     if(!groups.length){showToast('구역/조 정보가 없습니다. 엑셀에 구역·조 컬럼을 매핑해서 업로드해주세요.','err');return;}
@@ -124,10 +124,10 @@ async function loadProjects(){
     try{
       // closed: 폐전 표시(extra._closed_at). 이 형태의 조회가 안 되는 환경이면 예전 방식으로 다시 받는다 (그때는 폐전도 개수에 포함됨)
       const [allItems,allDone]=await Promise.all([
-        SupabaseUtil.select('hydmap_items',{columns:'id,inspection_id,group_name,closed:extra->>_closed_at'})
-          .then(r=>{if(!Array.isArray(r))throw new Error('형식');return r;})
-          .catch(()=>SupabaseUtil.select('hydmap_items',{columns:'id,inspection_id,group_name'})),
-        SupabaseUtil.select('hydmap_done',{columns:'item_id,inspection_id'})
+        // 모든 계획의 소화전·완료 기록을 1000행씩 나눠 끝까지 받음 (예전엔 1000행에서 잘려 개수가 틀어질 수 있었음)
+        sbSelectAll('hydmap_items',{columns:'id,inspection_id,group_name,closed:extra->>_closed_at'})
+          .catch(()=>sbSelectAll('hydmap_items',{columns:'id,inspection_id,group_name'})),
+        sbSelectAll('hydmap_done',{columns:'item_id,inspection_id',key:'item_id'})
       ]);
       const totalMap={},doneMap2={};
       const groupTotal={},groupDone={},itemGroup={};
@@ -348,6 +348,17 @@ async function createProject(){
 }
 async function deleteProject(id,name){
   if(!requireAdmin())return;
+  // 세분계획(팀·조 카드)은 데이터 없이 부모 계획을 걸러 보는 카드라 카드만 지운다 (v3.10.1 — 예전엔 '모든 점검 데이터가 삭제된다'고 잘못 안내)
+  const sp=subPlanList.find(x=>String(x.id)===String(id));
+  if(sp){
+    if(!confirm(`"${name}" 카드를 삭제할까요?\n(점검 데이터는 부모 계획에 있으므로 그대로 남습니다)`))return;
+    try{
+      await SupabaseUtil.remove('hydmap_projects',{parent_id:id}); // 혹시 딸린 카드가 있으면 함께
+      await SupabaseUtil.remove('hydmap_projects',{id});
+      showToast('카드를 삭제했습니다','ok');loadProjects();
+    }catch(e){showToast('삭제 실패: '+e.message,'err');}
+    return;
+  }
   if(!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?\n(모든 점검 데이터 및 사진 기록, 원본 파일이 삭제됩니다)`))return;
   try{
     showToast('삭제 중...','');
@@ -369,6 +380,7 @@ async function deleteProject(id,name){
     await SupabaseUtil.remove('hydmap_done',{inspection_id:id});
     await SupabaseUtil.remove('hydmap_records',{inspection_id:id});
     await SupabaseUtil.remove('hydmap_items',{inspection_id:id});
+    await SupabaseUtil.remove('hydmap_projects',{parent_id:id}); // 딸린 팀·조 세분계획 카드도 (예전엔 남아서 보이지 않는 채로 쌓였음)
     await SupabaseUtil.remove('hydmap_projects',{id});
 
     showToast('프로젝트 삭제 완료','ok');

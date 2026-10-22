@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/export-original.js — 처음 올린 엑셀과 같은 형식(칸 이름·순서)으로, 고친 내용을 채워 내려받기 */
-AppFiles.reg('js/export-original.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/export-original.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 원본 형식으로 내려받기 ══════════
    "결과 파일출력"은 앱이 정한 칸으로 나오므로, 처음 올린 대장 엑셀과 형식이 다르다.
@@ -143,7 +143,7 @@ async function runExportOriginal(headers,rows,ix){
     fill(out,d,true);
     aoa.push(out);
   });
-  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const stamp=localDate().replace(/-/g,''); // 파일 이름의 날짜 (이 기기 시간대 기준)
   const fname=`${currentProject?.name||'소화전'}_원본형식_${stamp}.xlsx`;
   if(window.XLSX&&XLSX.utils&&XLSX.utils.aoa_to_sheet&&XLSX.writeFile){
     // SheetJS가 준비돼 있으면 칸 그대로(이름이 같거나 비어 있는 칸도 원래 자리에) 쓴다

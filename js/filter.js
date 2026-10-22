@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -50,7 +50,9 @@ function onGroupSelectChange(g){
 function updateGroupCounts(){
   const sel=document.getElementById('groupSelect');
   if(!sel)return;
-  const vis=items.filter(d=>!filterText||d.name.toLowerCase().includes(filterText.toLowerCase()));
+  // 검색은 지도·목록과 같은 기준(번호 또는 주소)으로 센다 (v3.10.1 — 예전엔 번호만 봐서 개수가 목록과 달랐음)
+  const q=filterText.toLowerCase();
+  const vis=items.filter(d=>!q||d.name.toLowerCase().includes(q)||(d.address||'').toLowerCase().includes(q));
   const opts=sel.querySelectorAll('option');
   opts.forEach(opt=>{
     if(!opt.value){

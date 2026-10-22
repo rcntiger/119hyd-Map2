@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/closed.js — 폐전 표시 (지우지 않고 표시만: 회색 마커 · 진행률과 인쇄에서 제외 · 되돌리기 가능) */
-AppFiles.reg('js/closed.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/closed.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 폐전 표시 ══════════
    폐전된 소화전은 지우지 않고 표시만 한다. 지우면 과거 점검 기록·이력이 사라지고, 같은 엑셀을 다시 올리면 되살아나기 때문.
@@ -44,7 +44,7 @@ function syncClosedMarker(idx){
 }
 // 폐전된 소화전의 정보카드: 점검 입력·완료 버튼 대신 폐전 안내와 취소 버튼. 메모·사진은 그대로 쓸 수 있다.
 function renderClosedPopup(iwEl,idx,d){
-  const memo=memoMap[d.id]||'';
+  const memo=memoShown(d); // 저장 전 입력 중인 글자가 있으면 그것 (record.js)
   const at=new Date(d.extra._closed_at);
   const when=isNaN(at)?'':`${at.getFullYear()}.${at.getMonth()+1}.${at.getDate()}`;
   const by=d.extra._closed_by||'';

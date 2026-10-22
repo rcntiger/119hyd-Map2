@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/nocoord.js — 좌표 없는 소화전: 위치 지정 · 지도 없이 정보카드 · 모아 보기(좌표없음/겹친 위치) 버튼 */
-AppFiles.reg('js/nocoord.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/nocoord.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 모아 보기 (목록 위 버튼) ══════════
    ''        : 평소
@@ -94,7 +94,7 @@ function ncCloseCard(){
   const idx=_ncIdx, d=items[idx], e=_ncEls(false);
   // 입력 후 2초 뒤 자동 저장되는 메모가 아직 저장 전이면, 카드가 사라지기 전에 지금 저장
   const ta=document.getElementById(`memo-${idx}`);
-  const saving=(d&&ta&&ta.value.trim()!==(memoMap[d.id]||''))?saveMemoNow(idx):null; // 메모 글자는 이 줄에서 바로 읽어 감
+  const saving=(d&&(memoTimers[idx]!==undefined||(ta&&ta.value.trim()!==(memoMap[d.id]||''))))?saveMemoNow(idx):null; // 메모 글자는 이 줄에서 바로 읽어 감
   _ncIdx=-1;
   if(e){e.bg.classList.remove('open');e.el.innerHTML='';} // 같은 id가 지도 카드와 겹치지 않도록 비움
   updateListItem(idx); // 목록의 상태 표시(결과·메모·사진 수) 갱신

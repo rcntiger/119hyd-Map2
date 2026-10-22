@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/label-layout.js — 이름표 겹침 피하기 (축척에 따라 가까운 소화전의 이름표가 부딪히면 빈 자리로 옮김) */
-AppFiles.reg('js/label-layout.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/label-layout.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* 이름표는 원래 마커 바로 아래에 붙는다 (marker.js: xAnchor .5, yAnchor 0, margin-top 13px).
    지도를 축소하면 위치가 다른 소화전끼리도 이름표가 화면에서 겹치므로,

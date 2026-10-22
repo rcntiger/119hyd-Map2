@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -47,6 +47,7 @@ function panToForCard(lat,lng){
 //   그래서 계획 전환(전체 → 홈 → 조 카드 등) 시 이전 계획의 마커가 유령처럼 남아
 //   "조 하나만 골랐는데 다른 조가 보이는" 버그가 났다. 반드시 이 함수로 지운 뒤 초기화할 것.
 function clearMapOverlays(){
+  flushPendingMemos(); // 저장을 기다리던 메모 (record.js)
   if(typeof _flushAllMemoHist==='function')_flushAllMemoHist();
   closeIw();
   if(typeof stopPreciseGps==='function')stopPreciseGps();
@@ -216,9 +217,9 @@ function ensurePopupRendered(idx){
 
 function renderPopup(iwEl,idx,d,iw){
   const isDone=!!doneMap[d.id];
-  const doneDate=doneMap[d.id]?.done_at?new Date(doneMap[d.id].done_at).toISOString().slice(0,10):'';
+  const doneDate=doneMap[d.id]?.done_at?localDate(doneMap[d.id].done_at):''; // 이 기기 시간대의 날짜 (UTC로 자르면 오전 완료가 어제로 보임)
   const color=groupColor(d);
-  const memo=memoMap[d.id]||'';
+  const memo=memoShown(d); // 저장 전 입력 중인 글자가 있으면 그것 (record.js)
   const photos=photoMap[d.id]||[];
   // 설치년도는 '소화전 종류' 줄 오른쪽에 따로 표시하고, 나머지 추가정보만 위치 아래에 표시
   const _isYearKey=k=>/^설치\s*(연|년)도$/.test(String(k).trim());

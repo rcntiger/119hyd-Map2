@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/excel.js — 엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용) */
-AppFiles.reg('js/excel.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/excel.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Excel 업로드 / 컬럼 재설정 (공통 ExcelUtil.createReader 사용) ══════════ */
 let excelReader=null;
@@ -358,7 +358,7 @@ async function _runReset(parsed){
 
 /* ══════════ Excel Export ══════════ */
 async function exportExcel(){
-  const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const stamp=localDate().replace(/-/g,''); // 파일 이름의 날짜 (이 기기 시간대 기준)
   const typeLabel=HY_TYPE_LABEL; // 지상식 · 지하식 · 비상소화장치
   const yesMidNo={yes:'양호',mid:'보통',no:'재도색'};
   const insulLabel={yes:'설치됨',mid:'불필요',no:'재설치'};

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/init.js — 시작 (DOMContentLoaded) · 키보드 */
-AppFiles.reg('js/init.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/init.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Init ══════════ */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const nameEl=document.getElementById('inspNameGlobal');
   const dateEl=document.getElementById('inspDateGlobal');
   if(nameEl)nameEl.value=safeStorage.get('hy_insp_name');
-  if(dateEl)dateEl.value=new Date().toISOString().slice(0,10); // 점검일자는 항상 오늘 날짜로 자동 입력
+  if(dateEl)dateEl.value=localDate(); // 점검일자는 항상 오늘 날짜로 자동 입력 (이 기기 시간대 기준 — UTC로 하면 오전 9시 전엔 어제가 됨)
 });
 
 // 키보드

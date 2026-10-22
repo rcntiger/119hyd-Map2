@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/gps.js — 현위치 · 정밀 GPS 보정 */
-AppFiles.reg('js/gps.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/gps.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 현위치 ══════════ */
 let _myLocMarker=null,_myLocCircle=null,_myLocWatch=null;
@@ -93,6 +93,19 @@ function stopPreciseGps(){
   const panel=document.getElementById('gpsPanel');if(panel)panel.style.display='none';
 }
 
+// 현위치 버튼 글자 — 아이콘만 바꾸고 PC의 ' 현위치' 글자는 남긴다 (v3.10.1: 예전엔 textContent로 바꿔 글자가 사라졌음)
+function _myLocBtn(icon,on){
+  const btn=document.getElementById('btnMyLoc');if(!btn)return;
+  btn.innerHTML=`${icon}<span class="btn-txt"> 현위치</span>`;
+  btn.classList.toggle('on',!!on);
+}
+function _myLocStop(){
+  if(_myLocWatch!==null)navigator.geolocation.clearWatch(_myLocWatch);
+  _myLocWatch=null;
+  _myLocMarker?.setMap(null);_myLocMarker=null;
+  _myLocCircle?.setMap(null);_myLocCircle=null;
+  _myLocBtn('📍',false);
+}
 function toggleMyLocation(){
   // 위치 수정 모드 중이면, 일반 위치추적 대신 "현재 위치로 바로 수정"으로 동작
   if(fixLocationIdx>=0){
@@ -101,19 +114,9 @@ function toggleMyLocation(){
     startPreciseGps(idx);
     return;
   }
-  const btn=document.getElementById('btnMyLoc');
-  if(_myLocWatch!==null){
-    // 추적 종료
-    navigator.geolocation.clearWatch(_myLocWatch);
-    _myLocWatch=null;
-    _myLocMarker?.setMap(null);_myLocMarker=null;
-    _myLocCircle?.setMap(null);_myLocCircle=null;
-    btn.classList.remove('on');
-    showToast('현위치 추적 종료','');
-    return;
-  }
+  if(_myLocWatch!==null){_myLocStop();showToast('현위치 추적 종료','');return;}
   if(!navigator.geolocation){showToast('이 브라우저는 위치 기능을 지원하지 않습니다','err');return;}
-  btn.textContent='⏳';
+  _myLocBtn('⏳',false);
   _myLocWatch=navigator.geolocation.watchPosition(
     pos=>{
       const {latitude:lat,longitude:lng,accuracy}=pos.coords;
@@ -125,24 +128,25 @@ function toggleMyLocation(){
         _myLocMarker=new kakao.maps.CustomOverlay({position:latlng,content:el,zIndex:200});
         _myLocMarker.setMap(kakaoMap);
         kakaoMap.panTo(latlng);
+        _myLocBtn('📍',true);
       }else{
         _myLocMarker.setPosition(latlng);
       }
-      // 정확도 원
-      if(_myLocCircle){_myLocCircle.setMap(null);}
-      _myLocCircle=new kakao.maps.Circle({
-        center:latlng,radius:accuracy,
-        strokeWeight:1,strokeColor:'#2563eb',strokeOpacity:.4,
-        fillColor:'#2563eb',fillOpacity:.08,
-      });
-      _myLocCircle.setMap(kakaoMap);
-      btn.textContent='📍';
-      btn.classList.add('on');
+      // 정확도 원 (매번 새로 만들지 않고 위치·반지름만 바꿈)
+      if(!_myLocCircle){
+        _myLocCircle=new kakao.maps.Circle({
+          center:latlng,radius:accuracy,
+          strokeWeight:1,strokeColor:'#2563eb',strokeOpacity:.4,
+          fillColor:'#2563eb',fillOpacity:.08,
+        });
+        _myLocCircle.setMap(kakaoMap);
+      }else{_myLocCircle.setPosition(latlng);_myLocCircle.setRadius(accuracy);}
     },
     err=>{
-      btn.textContent='📍';
-      btn.classList.remove('on');
-      _myLocWatch=null;
+      // 이미 위치를 받아 추적 중일 때의 '시간 초과'는 제자리에 있어 새 값이 늦게 온 것뿐 — 끄지 않는다 (v3.10.1)
+      // (예전엔 버튼만 꺼지고 측정은 계속돼, 다시 누르면 추적이 두 개 겹쳤다)
+      if(err.code===3&&_myLocMarker)return;
+      _myLocStop();
       const msg={1:'위치 권한이 거부됐습니다',2:'위치를 가져올 수 없습니다',3:'위치 요청 시간 초과'};
       showToast(msg[err.code]||'위치 오류','err');
     },

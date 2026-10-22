@@ -1,8 +1,9 @@
 /* 119hyd-Map2 · js/project-open.js — 계획 열기/닫기 · 계획 데이터 불러오기 */
-AppFiles.reg('js/project-open.js','v3.10.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project-open.js','v3.10.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 프로젝트 열기 ━━
 async function openProject(proj){
+  flushPendingMemos(); // 이전 계획에서 저장을 기다리던 메모는 그 계획으로 먼저 저장 (record.js)
   lockedFilterGroup='';teamFilterPrefix='';
   let displayName=proj.name;
   if(proj.parent_id){
@@ -25,7 +26,7 @@ async function openProject(proj){
   document.getElementById('pickModeBtn')?.classList.remove('active');
   document.getElementById('listEl').innerHTML='<div style="text-align:center;color:var(--mt);font-size:12px;padding:30px">지도 초기화 중...</div>';
   const dateEl=document.getElementById('inspDateGlobal');
-  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10); // 안전장치: 비어있으면 오늘 날짜로
+  if(dateEl&&!dateEl.value)dateEl.value=localDate(); // 안전장치: 비어있으면 오늘 날짜로
   // 지도 SDK·지도 준비와 데이터 받기를 동시에 진행 (예전엔 지도 준비가 끝난 뒤 데이터를 받기 시작)
   _openT0=performance.now();
   const pid=currentProject.id;
@@ -48,6 +49,7 @@ function handleBack(){
 
 async function goHome(){
   try{
+    flushPendingMemos(); // 저장을 기다리던 메모 (record.js)
     areaCancel(); // 인쇄 영역 지정 중이었다면 정리
     if(kakaoMap){Object.values(overlays).forEach(o=>{o.overlay?.setMap(null);o.iw?.setMap(null);});}
     if(iwOpen){iwOpen.setMap(null);iwOpen=null;}
@@ -84,7 +86,8 @@ async function goHome(){
 // 쿼리 1번으로 합칠 수 있다. 혹시 FK 관계가 아직 안 걸려있거나 임베딩이 실패하면
 // (예: 관계명이 다르거나 RLS로 막힌 경우) 기존 5-쿼리 방식으로 자동 폴백한다.
 async function fetchProjectDataJoined(id){
-  const itemsRes=await SupabaseUtil.select('hydmap_items',{
+  // 1000개씩 나눠 끝까지 받음 (서버가 한 번에 1000행까지만 줌 — core.js sbSelectAll)
+  const itemsRes=await sbSelectAll('hydmap_items',{
     eq:{inspection_id:id},
     order:{column:'created_at',ascending:true},
     columns:'*,hydmap_done(*),hydmap_memo(*),hydmap_photos(*),hydmap_records(*)'
@@ -107,11 +110,11 @@ async function fetchProjectDataJoined(id){
 }
 async function fetchProjectDataSeparate(id){
   const [itemsRes,doneArr,memoArr,photosArr,hyArr]=await Promise.all([
-    SupabaseUtil.select('hydmap_items',{eq:{inspection_id:id},order:{column:'created_at',ascending:true}}),
-    SupabaseUtil.select('hydmap_done',{eq:{inspection_id:id}}),
-    SupabaseUtil.select('hydmap_memo',{eq:{inspection_id:id}}),
-    SupabaseUtil.select('hydmap_photos',{eq:{inspection_id:id},order:{column:'created_at',ascending:true}}),
-    SupabaseUtil.select('hydmap_records',{eq:{inspection_id:id}}),
+    sbSelectAll('hydmap_items',{eq:{inspection_id:id},order:{column:'created_at',ascending:true}}),
+    sbSelectAll('hydmap_done',{eq:{inspection_id:id},key:'item_id'}),
+    sbSelectAll('hydmap_memo',{eq:{inspection_id:id},key:'item_id'}),
+    sbSelectAll('hydmap_photos',{eq:{inspection_id:id},order:{column:'created_at',ascending:true}}),
+    sbSelectAll('hydmap_records',{eq:{inspection_id:id}}),
   ]);
   return{itemsRes,doneArr,memoArr,photosArr,hyArr};
 }
