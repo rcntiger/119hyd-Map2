@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/core.js — 기본 도구 (esc · DOM 캐시 · safeStorage · 토스트 · 모달 · sbClient) */
-AppFiles.reg('js/core.js','v3.11.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/core.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Utils & DOM Cache ══════════ */
 // 따옴표도 바꾼다 — value="…"·title="…" 같은 속성 안에 넣을 때 글자에 "가 있으면 속성이 끊겼다 (v3.10.1)

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/excel.js — 엑셀 업로드 · 컬럼 재설정 · 결과 내보내기 (공통 ExcelUtil 사용) */
-AppFiles.reg('js/excel.js','v3.11.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/excel.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Excel 업로드 / 컬럼 재설정 (공통 ExcelUtil.createReader 사용) ══════════ */
 let excelReader=null;
@@ -22,6 +22,7 @@ function getExcelReader(){
       {id:'extra',label:'추가정보',keywords:['비고','추가','기타','결과','검수','extra']},
     ],
     defaultHeaderRow:1,
+    forwardFill:'merged', // 병합된 칸만 채움 (v3.11.1 — 공통 기본값은 빈 위도·경도·비고까지 위 행 값으로 채웠음)
     storageKey:'hydmap', // 새 excel.js의 앱별 컬럼 설정 저장 키 (work-div 등 다른 앱과 localStorage 분리)
     confirmLabel:'확인',
     onConfirm:(headers,rows,mapping)=>_onExcelConfirm(headers,rows,mapping),
@@ -466,7 +467,7 @@ async function exportExcel(){
   const locFixedRows=allRows.filter((_,i)=>!!items[i].loc_fixed_at);
   let histRows=[];
   try{
-    const hs=await SupabaseUtil.select('hydmap_history',{eq:{inspection_id:currentProject.id},order:{column:'created_at',ascending:true}});
+    const hs=await sbSelectAll('hydmap_history',{eq:{inspection_id:currentProject.id},order:{column:'created_at',ascending:true}}); // 1000건 넘어도 전부 (v3.11.1)
     const strip=t=>String(t||'').replace(/<br>/g,' / ').replace(/<[^>]+>/g,'').replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/&amp;/g,'&').replace(/&quot;/g,'"');
     histRows=(hs||[]).map(h=>({'일시':_histTime(h.created_at),'점검자':h.actor||'','시설번호':h.item_name||'','항목':h.action,'내용':strip(_histText(h))}));
   }catch(e){console.warn('변경이력 조회 실패',e);}

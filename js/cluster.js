@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/cluster.js — 가벼운 묶음 표시(클러스터) : 카카오 MarkerClusterer 대체 */
-AppFiles.reg('js/cluster.js','v3.11.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/cluster.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* 왜 바꿨나
    카카오 MarkerClusterer는 소화전 870개 기준으로 축척 6 이상에서 다시 묶을 때마다 약 3초 동안 화면이 멈췄다
