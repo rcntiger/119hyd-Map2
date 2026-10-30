@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.12.1"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.12.2"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -122,7 +122,7 @@
 .old-panel-head{display:flex;align-items:center;justify-content:space-between}
 .old-panel-head button{background:none;border:none;color:var(--mt);font-size:16px;cursor:pointer;padding:0 2px}
 .old-row{display:flex;align-items:center;gap:6px;cursor:pointer}
-.old-row input[type=number]{padding:4px 6px;font-size:12.5px;border:1px solid var(--bd2);border-radius:6px;background:var(--sur2);color:var(--tx)}
+.old-row input[type=date]{padding:4px 6px;font-size:12.5px;border:1px solid var(--bd2);border-radius:6px;background:var(--sur2);color:var(--tx)}
 .old-hint{font-size:10.5px;color:var(--mt);line-height:1.4}
 .old-info{font-size:12px;line-height:1.6}
 .old-only-btn{margin-left:4px;padding:2px 8px;border:1px solid #f97316;border-radius:12px;background:transparent;color:#f97316;font-size:11px;font-weight:700;cursor:pointer}
