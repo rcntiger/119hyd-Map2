@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.12.0';
+const APP_VERSION = 'v3.12.1';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
       <div class="old-panel" id="oldPanel">
         <div class="old-panel-head"><b>⏳ 노후 소화전</b><button onclick="closeOldPanel()" title="닫기">✕</button></div>
         <label class="old-row"><input type="checkbox" id="oldOnChk" onchange="setOldOn(this.checked)"> 지도·목록에 표시</label>
-        <label class="old-row">기준일 <input type="date" id="oldCutoffInp" onchange="setOldCutoff(this.value)"> 이전 설치</label>
+        <label class="old-row">설치 후 <input type="number" id="oldYearsInp" min="1" max="100" step="1" style="width:56px" onchange="setOldYears(this.value)">년 이상 <span id="oldYearsHint" class="old-hint"></span></label>
         <div class="old-hint">엑셀의 '설치년도' 칸 기준 · 연도만 있으면 그해 1월 1일로 봄 · 폐전 제외</div>
         <div class="old-info" id="oldPanelInfo"></div>
       </div>

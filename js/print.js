@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print.js — 인쇄: 범위 선택 · 점검 목록표 */
-AppFiles.reg('js/print.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print.js','v3.12.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 (전체 / 팀 / 조) ══════════ */
 // 범위 값: 'all' | 'team:1팀' | 'jo:1팀 2조'
@@ -52,7 +52,7 @@ function showPrintModal(anchorIdx){
   if(!items.length){showToast('인쇄할 소화전이 없습니다','err');return;}
   // 노후 소화전만 (old.js): 지도 표시를 켜지 않았어도 기준일로 고를 수 있다. 기준일과 개수를 함께 보여 줌
   const ol=document.getElementById('printOldLabel');
-  if(ol)ol.textContent=`⏳ 노후 소화전만 (${_oldCutoffText()} 이전 설치 ${items.filter(isOldRaw).length}개)`;
+  if(ol)ol.textContent=`⏳ 노후 소화전만 (설치 후 ${_oldBasisText()} ${items.filter(isOldRaw).length}개)`;
   const sel=document.getElementById('printScope');
   const opts=[];
   if(lockedFilterGroup){
@@ -126,7 +126,7 @@ function doPrint(){
   const fmt=document.querySelector('input[name="printFmt"]:checked')?.value||'list';
   const undoneOnly=document.getElementById('printUndoneOnly').checked;
   const oldOnly=!!document.getElementById('printOldOnly')?.checked; // 노후 소화전만 (old.js)
-  const oldTag=oldOnly?` · 노후(${_oldCutoffText()} 이전 설치)`:'';
+  const oldTag=oldOnly?` · 노후(${_oldBasisText()})`:'';
   if(scope==='area'){
     hideModal('printModal');
     areaStart({fmt,scope:document.getElementById('printAreaScope').value,undoneOnly,oldOnly,oldTag,showLabels:document.getElementById('printMapLabels').checked});
