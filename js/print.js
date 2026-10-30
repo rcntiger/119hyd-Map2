@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print.js — 인쇄: 범위 선택 · 점검 목록표 */
-AppFiles.reg('js/print.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 (전체 / 팀 / 조) ══════════ */
 // 범위 값: 'all' | 'team:1팀' | 'jo:1팀 2조'
@@ -50,6 +50,9 @@ function _distM(a,b){
 }
 function showPrintModal(anchorIdx){
   if(!items.length){showToast('인쇄할 소화전이 없습니다','err');return;}
+  // 노후 소화전만 (old.js): 지도 표시를 켜지 않았어도 기준일로 고를 수 있다. 기준일과 개수를 함께 보여 줌
+  const ol=document.getElementById('printOldLabel');
+  if(ol)ol.textContent=`⏳ 노후 소화전만 (${_oldCutoffText()} 이전 설치 ${items.filter(isOldRaw).length}개)`;
   const sel=document.getElementById('printScope');
   const opts=[];
   if(lockedFilterGroup){
@@ -122,9 +125,11 @@ function doPrint(){
   const scope=document.getElementById('printScope').value;
   const fmt=document.querySelector('input[name="printFmt"]:checked')?.value||'list';
   const undoneOnly=document.getElementById('printUndoneOnly').checked;
+  const oldOnly=!!document.getElementById('printOldOnly')?.checked; // 노후 소화전만 (old.js)
+  const oldTag=oldOnly?` · 노후(${_oldCutoffText()} 이전 설치)`:'';
   if(scope==='area'){
     hideModal('printModal');
-    areaStart({fmt,scope:document.getElementById('printAreaScope').value,undoneOnly,showLabels:document.getElementById('printMapLabels').checked});
+    areaStart({fmt,scope:document.getElementById('printAreaScope').value,undoneOnly,oldOnly,oldTag,showLabels:document.getElementById('printMapLabels').checked});
     return;
   }
   if(scope==='anchor'){
@@ -133,7 +138,8 @@ function doPrint(){
     const r=+document.getElementById('printRadius').value||300;
     let near=items.filter(d=>d.lat&&d.lng&&_distM(a,d)<=r&&(d===a||!isClosed(d)));
     if(undoneOnly)near=near.filter(d=>d===a||!doneMap[d.id]);
-    const opt={anchor:a,r,label:`${_shortNo(a.name)} 기준 반경 ${r>=1000?(r/1000)+'km':r+'m'}`};
+    if(oldOnly)near=near.filter(d=>d===a||isOldRaw(d)); // 기준 소화전은 노후가 아니어도 남김 (위치 기준이므로)
+    const opt={anchor:a,r,label:`${_shortNo(a.name)} 기준 반경 ${r>=1000?(r/1000)+'km':r+'m'}${oldTag}`,showInstall:oldOnly};
     hideModal('printModal');
     if(fmt==='map')_printMap(scope,near,document.getElementById('printMapLabels').checked,false,opt);
     else _printList(scope,near,opt);
@@ -141,10 +147,12 @@ function doPrint(){
   }
   let list=items.filter(d=>_inPrintScope(d,scope));
   if(undoneOnly)list=list.filter(d=>!doneMap[d.id]);
-  if(!list.length){showToast('해당 범위에 인쇄할 소화전이 없습니다','err');return;}
+  if(oldOnly)list=list.filter(isOldRaw);
+  if(!list.length){showToast(oldOnly?'해당 범위에 인쇄할 노후 소화전이 없습니다':'해당 범위에 인쇄할 소화전이 없습니다','err');return;}
   hideModal('printModal');
-  if(fmt==='map')_printMap(scope,list,document.getElementById('printMapLabels').checked,document.getElementById('printMapPerJo').checked);
-  else _printList(scope,list);
+  const lopt=oldOnly?{label:_scopeLabel(scope)+oldTag,showInstall:true}:undefined; // 제목에 '노후' 표시, 목록표에 설치년도 칸
+  if(fmt==='map')_printMap(scope,list,document.getElementById('printMapLabels').checked,document.getElementById('printMapPerJo').checked,lopt);
+  else _printList(scope,list,lopt);
 }
 // ── 점검 목록표: 새 창에 표 형태로 만들어 인쇄 (조별로 페이지 분리) ──
 function _printList(scope,list,opt){
@@ -164,10 +172,10 @@ function _printList(scope,list,opt){
     const trs=rows.map((d,i)=>{
       const rec=hydrantMap[d.id];
       const res=rec?.result?hyStatusInfo(rec).label.replace(/^[^ ]+ /,''):'';
-      return `<tr${A&&d===A?' style="background:#fee2e2"':''}><td class="c">${i+1}</td>${A?`<td class="c">${d===A?'기준':Math.round(_distM(A,d))+'m'}</td>`:''}<td class="b">${esc(_shortNo(d.name))}</td><td>${esc((d.address||'').replace('서울특별시 금천구 ',''))}</td><td>${esc((d.extra?.['지번주소']||'').replace('서울특별시 금천구 ','').replace('서울특별시 ',''))}</td><td class="n">${d.lat?(+d.lat).toFixed(6):''}</td><td class="n">${d.lng?(+d.lng).toFixed(6):''}</td><td class="c">${typeTxt(d)}</td><td class="c">${esc(res)}</td><td class="c">${rec?.paint?PAINT_LABEL[rec.paint]:''}</td><td class="c">${rec?.insul?INSUL_LABEL[rec.insul]:''}</td><td class="c">${doneMap[d.id]?'✔':'☐'}</td><td class="m">${esc(memoMap[d.id]||'')}</td></tr>`;
+      return `<tr${A&&d===A?' style="background:#fee2e2"':''}><td class="c">${i+1}</td>${A?`<td class="c">${d===A?'기준':Math.round(_distM(A,d))+'m'}</td>`:''}<td class="b">${esc(_shortNo(d.name))}</td><td>${esc((d.address||'').replace('서울특별시 금천구 ',''))}</td><td>${esc((d.extra?.['지번주소']||'').replace('서울특별시 금천구 ','').replace('서울특별시 ',''))}</td><td class="n">${d.lat?(+d.lat).toFixed(6):''}</td><td class="n">${d.lng?(+d.lng).toFixed(6):''}</td><td class="c">${typeTxt(d)}</td>${opt?.showInstall?`<td class="c">${esc(installInfo(d)?.text||'')}</td>`:''}<td class="c">${esc(res)}</td><td class="c">${rec?.paint?PAINT_LABEL[rec.paint]:''}</td><td class="c">${rec?.insul?INSUL_LABEL[rec.insul]:''}</td><td class="c">${doneMap[d.id]?'✔':'☐'}</td><td class="m">${esc(memoMap[d.id]||'')}</td></tr>`;
     }).join('');
     return `<section${gi?' class="pb"':''}><h2>${esc(g)} <small>${rows.length}개 · 완료 ${done}개</small></h2>
-      <table><thead><tr><th style="width:28px">No</th>${A?'<th style="width:46px">거리</th>':''}<th style="width:56px">시설번호</th><th>도로명주소</th><th>지번주소</th><th style="width:64px">위도</th><th style="width:70px">경도</th><th style="width:34px">식구분</th><th style="width:56px">점검결과</th><th style="width:38px">도색</th><th style="width:38px">보온</th><th style="width:34px">완료</th><th style="width:13%">메모 / 비고</th></tr></thead><tbody>${trs}</tbody></table></section>`;
+      <table><thead><tr><th style="width:28px">No</th>${A?'<th style="width:46px">거리</th>':''}<th style="width:56px">시설번호</th><th>도로명주소</th><th>지번주소</th><th style="width:64px">위도</th><th style="width:70px">경도</th><th style="width:34px">식구분</th>${opt?.showInstall?'<th style="width:52px">설치</th>':''}<th style="width:56px">점검결과</th><th style="width:38px">도색</th><th style="width:38px">보온</th><th style="width:34px">완료</th><th style="width:13%">메모 / 비고</th></tr></thead><tbody>${trs}</tbody></table></section>`;
   }).join('');
   const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)} - ${esc(opt?.label||_scopeLabel(scope))}</title>
 <style>

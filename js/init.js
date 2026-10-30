@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/init.js — 시작 (DOMContentLoaded) · 키보드 */
-AppFiles.reg('js/init.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/init.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Init ══════════ */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   tooltipOn=safeStorage.get('hy_tooltip_on','1')!=='0';
   _applyTooltipBtn();
   _applyLabelClear();
+  document.getElementById('btnOld')?.classList.toggle('on',oldOn); // 노후 소화전 표시 켜짐 (old.js)
   // 버전 표시: 화면 하단(캐시된 옛 버전인지 사용자가 바로 확인 가능) + 콘솔(문의 대응용)
   const verEl=document.getElementById('appVersion');
   if(verEl)verEl.textContent=`소화전 점검 지도 ${APP_VERSION}`;

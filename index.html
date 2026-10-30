@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.11.1';
+const APP_VERSION = 'v3.12.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -22,7 +22,7 @@ const AppFiles = {
   // 공통 모듈: 파일 → 그 파일이 만드는 전역 이름 (불러왔는지 확인용. null이면 확인 생략)
   // ※ common의 기존 config.js(ConfigUtil)·kakao.js(KakaoUtil)는 쓰지 않는다 — keys.js(APP_KEYS)·kakao-geo.js(KakaoGeo)와 별개 파일
   common: {'logger.js':null,'utils.js':'Utils','supabase.js':'SupabaseUtil','excel.js':'ExcelUtil','keys.js':'APP_KEYS','kakao-geo.js':'KakaoGeo'},
-  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','cluster','marker','hydrant-form','photo','history','record','list','nocoord','overlap','label-layout','closed','location','location-master','geocode','excel','export-original','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
+  js: ['config','state','core','auth','project','project-open','filter','pick','map-core','cluster','marker','hydrant-form','photo','history','record','list','nocoord','overlap','label-layout','closed','old','location','location-master','geocode','excel','export-original','search','gps','batch-fix','map-tools','print','print-map','print-area','roadview','mobile','init'],
 
   loaded: {},                                   // js 파일이 스스로 적어 넣는 버전
   reg(name, ver) { this.loaded[name] = ver; },
@@ -242,6 +242,14 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
         </div>
         <div class="map-search-results" id="mapSearchResults"></div>
       </div>
+      <!-- 노후 소화전 설정 (js/old.js) -->
+      <div class="old-panel" id="oldPanel">
+        <div class="old-panel-head"><b>⏳ 노후 소화전</b><button onclick="closeOldPanel()" title="닫기">✕</button></div>
+        <label class="old-row"><input type="checkbox" id="oldOnChk" onchange="setOldOn(this.checked)"> 지도·목록에 표시</label>
+        <label class="old-row">기준일 <input type="date" id="oldCutoffInp" onchange="setOldCutoff(this.value)"> 이전 설치</label>
+        <div class="old-hint">엑셀의 '설치년도' 칸 기준 · 연도만 있으면 그해 1월 1일로 봄 · 폐전 제외</div>
+        <div class="old-info" id="oldPanelInfo"></div>
+      </div>
       <div class="map-toolbar-top" id="mapToolbarTop">
         <button class="tool-btn" id="btnSearch" onclick="toggleMapSearch()">🔍<span class="btn-txt"> 검색</span></button>
         <button class="tool-btn" id="btnSat" onclick="toggleSat()">🛰️<span class="btn-txt"> 위성</span></button>
@@ -250,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
         <button class="tool-btn" id="btnLabelToggle" onclick="toggleLabelVisibility()">🏷️<span class="btn-txt" id="btnLabelToggleTxt"> 이름 OFF</span></button>
         <button class="tool-btn pc-only" id="btnLabelClear" onclick="toggleLabelClear()" title="이름표 바탕을 투명하게(글자만) / 불투명하게 (PC 전용)">◻️<span class="btn-txt" id="btnLabelClearTxt"> 이름표 불투명</span></button>
         <button class="tool-btn on pc-only" id="btnTipToggle" onclick="toggleTooltip()" title="마커에 마우스를 올렸을 때 소화전 번호 표시">🔢<span class="btn-txt" id="btnTipToggleTxt"> 툴팁 ON</span></button>
+        <button class="tool-btn" id="btnOld" onclick="toggleOldPanel()" title="기준일보다 먼저 설치된(노후) 소화전 표시">⏳<span class="btn-txt"> 노후</span></button>
         <button class="tool-btn pc-only admin-only" id="btnBatchFix" onclick="toggleBatchFix()" title="여러 소화전을 마우스로 끌어 한 번에 위치 수정 (PC 전용)">✋<span class="btn-txt"> 일괄 위치수정</span></button>
         <button class="tool-btn" id="btnDistClear" onclick="clearDist()" style="display:none;font-size:11px;color:var(--hi)">✕<span class="btn-txt"> 초기화</span></button>
       </div>
@@ -377,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
     </div>
     <div class="form-row" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
       <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printUndoneOnly"> 미완료 소화전만</label>
+      <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printOldOnly"> <span id="printOldLabel">⏳ 노후 소화전만</span></label>
       <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printMapLabels" checked> 지도 인쇄 시 소화전 번호 표시</label>
       <label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="printMapPerJo" checked> 지도 인쇄 시 조별로 한 장씩 (각 조 담당구역이 중앙)</label>
     </div>

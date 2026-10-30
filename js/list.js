@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){
@@ -28,6 +28,7 @@ function buildListItem(i){
       <div class="itags">
         ${d.group_name?`<span class="itag itag-grp">${esc(d.group_name)}</span>`:''}
         ${isClosed(d)?'<span class="itag" style="background:#e5e7eb;color:#374151">🚫 폐전</span>':''}
+        ${isOld(d)?`<span class="itag itag-old">⏳ 노후 (${esc(installInfo(d).text)})</span>`:''}
         ${hydrantMap[d.id]?`<span class="itag" style="background:${hyStatusInfo(hydrantMap[d.id]).bg};color:${hyStatusInfo(hydrantMap[d.id]).fg}">${hyStatusInfo(hydrantMap[d.id]).label}</span>`:''}
         ${isDone?'<span class="itag done-tag">✓ 완료</span>':''}
         ${memoMap[d.id]?'<span class="itag">📝 메모</span>':''}

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.11.1"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.12.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
@@ -120,3 +120,8 @@
   body.lbl-clear .hy-lbl{background:transparent!important;border-color:transparent!important;box-shadow:none!important;
     text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff,0 0 3px #fff}
 }
+
+/* 노후 소화전 (js/old.js): 마커 둘레 주황 테두리 — box-shadow(완료·선택 표시)와 겹치지 않게 outline 사용 */
+.kk-marker.old{outline:3px solid #f97316;outline-offset:1px}
+.kk-marker.old.active-mk{outline-offset:2px}
+.old-badge{display:inline-block;margin-left:4px;padding:0 6px;border-radius:8px;background:#fff7ed;color:#c2410c;font-size:10.5px;font-weight:800}

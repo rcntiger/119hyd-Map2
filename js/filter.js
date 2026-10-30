@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -85,6 +85,7 @@ function isHidden(d){
   // 모아 보기 '겹친 위치만': 선택 표시(인쇄 미리보기 포함) 중에는 적용하지 않음
   if(quickFilter==='overlap'&&!pickedFilterActive&&!ovlInStack(d))return true;
   if(quickFilter==='closed'&&!pickedFilterActive&&!isClosed(d))return true; // 모아 보기 '폐전만'
+  if(quickFilter==='old'&&!pickedFilterActive&&!isOld(d))return true; // 모아 보기 '노후만' (old.js)
   return false;
 }
 // 목록에서만 쓰는 숨김 여부. 모아 보기 '좌표없음만'은 목록만 거른다
@@ -237,7 +238,7 @@ function applyFilter(){
   filterText=document.getElementById('searchInput').value.trim();
   ovlRefresh(); // 겹침 묶음에서 지금 범위에 보이는 개수·배지·이름표 갱신 (아래 isHidden이 이 결과를 씀)
   // 모아 보기 대상이 하나도 안 남으면(전부 위치를 지정했거나 겹침을 다 풀었으면) 저절로 해제
-  if((quickFilter==='nocoord'&&!ncCount())||(quickFilter==='overlap'&&!ovlStackCount().groups)||(quickFilter==='closed'&&!closedCount()))quickFilter='';
+  if((quickFilter==='nocoord'&&!ncCount())||(quickFilter==='overlap'&&!ovlStackCount().groups)||(quickFilter==='closed'&&!closedCount())||(quickFilter==='old'&&(!oldOn||!oldCount())))quickFilter='';
   const toAdd=[],toRemove=[];
   items.forEach((d,i)=>{
     const hide=isHidden(d);

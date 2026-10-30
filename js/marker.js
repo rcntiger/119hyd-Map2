@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -113,7 +113,7 @@ function addMarker(idx,d){
   const isDone=!!doneMap[d.id];
   const color=groupColor(d);
   const el=document.createElement('div');
-  el.className=`kk-marker ${groupCls(d)}${isDone?' done':''}${isClosed(d)?' closed':''}`;
+  el.className=`kk-marker ${groupCls(d)}${isDone?' done':''}${isClosed(d)?' closed':''}${isOld(d)?' old':''}`; // old: 노후 소화전 테두리 (old.js)
   el.id='mk-'+idx;
   el.style.position='relative';
   el.innerHTML=getMarkerIconHtml(d);
@@ -276,7 +276,7 @@ function renderPopup(iwEl,idx,d,iw){
 
     <div id="hyForm-${idx}">
     <div class="hy-section">
-      ${hyTypeView(idx,d,draft,'소화전 종류',installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치년도 ${esc(String(installYear))}</span>`:'')}
+      ${hyTypeView(idx,d,draft,'소화전 종류',installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치년도 ${esc(String(installYear))}${isOld(d)?' <span class="old-badge">⏳ 노후</span>':''}</span>`:'')}
     </div>
 
     <div class="hy-collapsible-row">

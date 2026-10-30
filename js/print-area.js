@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/print-area.js — 인쇄 영역 지정 (지도에서 드래그, PC 전용) */
-AppFiles.reg('js/print-area.js','v3.11.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/print-area.js','v3.12.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 인쇄 영역 지정 ══════════
    인쇄 창에서 "지도에서 영역 지정"을 고르면 → 지도 위에서 드래그로 사각형을 그리고
@@ -31,6 +31,7 @@ function _areaList(){
   if(!_area?.box)return [];
   let list=items.filter(d=>_inPrintScope(d,_area.opt.scope)&&_areaInside(d,_area.box));
   if(_area.opt.undoneOnly)list=list.filter(d=>!doneMap[d.id]);
+  if(_area.opt.oldOnly)list=list.filter(isOldRaw); // 노후 소화전만 (old.js)
   return list;
 }
 // 마우스 위치(화면 좌표) → 지도 좌표
@@ -177,11 +178,11 @@ function areaToggleMode(){
 function areaConfirm(){
   if(!_area||!_area.box)return;
   const opt=_area.opt, box=_area.box, list=_areaList();
-  const label=`지정 영역 (${_scopeLabel(opt.scope)})`;
+  const label=`지정 영역 (${_scopeLabel(opt.scope)})${opt.oldTag||''}`;
   if(opt.fmt!=='map'&&!list.length){showToast('영역 안에 인쇄할 소화전이 없습니다','err');return;}
   areaCancel(); // 조작 바·사각형 정리 (지도 위치와 축척은 그대로 둠 → 그 축척으로 인쇄)
   if(opt.fmt==='map')_printMap(opt.scope,list,opt.showLabels,false,{area:box,label});
-  else _printList(opt.scope,list,{label});
+  else _printList(opt.scope,list,{label,showInstall:!!opt.oldOnly});
 }
 function areaCancel(){
   if(!_area)return;
