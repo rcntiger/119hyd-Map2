@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/core.js — 기본 도구 (esc · DOM 캐시 · safeStorage · 토스트 · 모달 · sbClient) */
-AppFiles.reg('js/core.js','v3.14.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/core.js','v3.14.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Utils & DOM Cache ══════════ */
 // 따옴표도 바꾼다 — value="…"·title="…" 같은 속성 안에 넣을 때 글자에 "가 있으면 속성이 끊겼다 (v3.10.1)
@@ -43,7 +43,8 @@ function $(id){return _domCache[id]||(_domCache[id]=document.getElementById(id))
 // setItem/getItem이 예외를 던져도 앱 전체가 멈추지 않도록 감싼다.
 const safeStorage={
   get(key,fallback=''){try{return localStorage.getItem(key)??fallback;}catch(e){console.warn('localStorage 읽기 실패:',e);return fallback;}},
-  set(key,val){try{localStorage.setItem(key,val);return true;}catch(e){console.warn('localStorage 저장 실패(프라이빗 모드이거나 저장공간 초과일 수 있음):',e);return false;}}
+  set(key,val){try{localStorage.setItem(key,val);return true;}catch(e){console.warn('localStorage 저장 실패(프라이빗 모드이거나 저장공간 초과일 수 있음):',e);return false;}},
+  remove(key){try{localStorage.removeItem(key);}catch(e){}}
 };
 
 let _toastTimer=null;

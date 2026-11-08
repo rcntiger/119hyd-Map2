@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -61,8 +61,31 @@ function getExcelHydrantType(d){
 }
 // 시설 종류는 올린 데이터(엑셀)로 정해진다. 데이터에 종류가 없을 때만 저장된 점검 기록의 값을 쓴다.
 function hyTypeOf(d){return getExcelHydrantType(d)||hydrantMap[d.id]?.hydrant_type||null;}
+/* ── 점검 입력 유지 (v3.14.2) ──
+   예전엔 '사용가부'까지 골라야 저장돼서, 도색·보호틀만 고르면 화면에만 보이고 새로고침·계획 다시 열기 때 사라졌다.
+   이제 ① 어느 항목이든 고르면 서버에 바로 저장하고(사용가부는 비어도 됨)
+        ② 이 기기에도 입력 상태를 따로 보관해(아래 _hyLocal*) 서버 저장이 실패하거나
+           '양호'만 고르고 등급(A~D)을 아직 안 고른 상태처럼 서버에 담기지 않는 값도 다시 열면 그대로 보인다.
+   서버에 그대로 담긴 뒤에는 기기 보관분을 지운다. */
+function _hyLocalKey(d){return currentProject?`hy_draft_${currentProject.id}_${d.id}`:null;}
+function _hyLocalGet(d){const k=_hyLocalKey(d);if(!k)return null;try{return JSON.parse(safeStorage.get(k)||'null');}catch{return null;}}
+function _hyLocalSet(idx){
+  const d=items[idx];const k=d&&_hyLocalKey(d);if(!k||!hyDraft[idx])return;
+  const {_fromExcel,...v}=hyDraft[idx];
+  safeStorage.set(k,JSON.stringify(v));
+}
+function _hyLocalDel(d){const k=_hyLocalKey(d);if(k)safeStorage.remove(k);}
+// 입력한 항목이 하나라도 있는지
+function _hyHasAny(dr){return !!(dr.paint||dr.insul||dr.protect||dr.roadmark||dr.result||dr.resultTop||(dr.defect_detail||'').trim());}
 function hyGetDraft(idx,d){
   if(!hyDraft[idx]){
+    // 이 기기에 보관해 둔 입력 상태가 있으면 그것부터 (종류는 항상 엑셀 값 우선)
+    const local=_hyLocalGet(d);
+    if(local){
+      const excelType=getExcelHydrantType(d);
+      hyDraft[idx]={...local,hydrant_type:excelType||local.hydrant_type||hydrantMap[d.id]?.hydrant_type||null,_fromExcel:false};
+      return hyDraft[idx];
+    }
     let rec=hydrantMap[d.id];
     const excelType=getExcelHydrantType(d);
     // 예전에 카드에서 종류를 바꿔 저장한 기록이 데이터의 종류와 점검 방식(소화전 ↔ 소화장치)까지 다르면, 그 결과 값은 쓸 수 없으므로 비운다
@@ -103,7 +126,7 @@ function hySetType(idx,val){
 function hySetField(idx,field,val){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
-  if(field==='defect_detail'){draft.defect_detail=val;return;}
+  if(field==='defect_detail'){draft.defect_detail=val;_hyLocalSet(idx);return;} // 서버 저장은 입력칸을 벗어날 때(onblur)
   draft[field]=(draft[field]===val)?null:val;
   // 값 하나를 고르면 해당 접이식 섹션은 자동으로 접어서 카드를 다시 컴팩트하게 만든다.
   // (단, 보호틀·노면표시는 항목이 2개라 하나 고르자마자 접으면 나머지를 못 고르니 자동 접힘 제외)
@@ -204,7 +227,9 @@ const _saveQueued={};       // idx → true(저장 중에 또 변경됨 → 끝�
 function hyMaybeAutoSave(idx){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
-  if(!(draft.hydrant_type&&draft.result))return;
+  _hyLocalSet(idx); // 이 기기에 먼저 보관 (서버 저장 전·실패해도 유지)
+  // 종류가 정해져 있고, 입력한 항목이 하나라도 있으면(또는 전에 저장한 기록을 비우는 경우) 서버에 저장
+  if(!draft.hydrant_type||!(_hyHasAny(draft)||hydrantMap[d.id]))return;
   clearTimeout(_autoSaveTimers[idx]);
   _autoSaveTimers[idx]=setTimeout(()=>{delete _autoSaveTimers[idx];hySaveNow(idx);},AUTOSAVE_DEBOUNCE_MS);
 }
@@ -217,7 +242,7 @@ async function hySaveNow(idx){
   const d=items[idx];if(!d||!currentProject)return;
   if(_saveInFlight[idx]){_saveQueued[idx]=true;return;} // 진행 중이면 예약만
   const draft=hyGetDraft(idx,d);
-  if(!draft.hydrant_type||!draft.result)return; // 필수 항목 미완성 — 자동저장 대상 아님
+  if(!draft.hydrant_type||!(_hyHasAny(draft)||hydrantMap[d.id]))return; // 종류가 없거나 입력한 것이 없으면 저장하지 않음 (기기 보관분은 남음)
   const name=getInspName();
   if(!name){showToast('상단에 점검자 이름을 입력하세요','err');return;}
   const record={
@@ -228,7 +253,7 @@ async function hySaveNow(idx){
     insul:draft.hydrant_type==='underground'?draft.insul:null,
     protect:draft.hydrant_type==='ground'?draft.protect:null,
     roadmark:draft.hydrant_type==='ground'?draft.roadmark:null,
-    result:draft.result,
+    result:draft.result||null, // 사용가부를 아직 안 골라도 저장 (v3.14.2)
     defect_detail:(draft.defect_detail||'').trim(),
     insp_name:name,
     insp_date:getInspDate(),
@@ -243,13 +268,19 @@ async function hySaveNow(idx){
     if(items[idx]!==d)return; // 저장하는 동안 다른 계획을 열었으면 화면은 건드리지 않음
     hydrantMap[d.id]=Array.isArray(saved)?(saved[0]||record):(saved||record);
     // 저장 중 추가 변경이 없었을 때만 draft를 비운다 (있으면 최신 draft 유지 후 재저장)
-    if(!_saveQueued[idx])delete hyDraft[idx];
+    // 단 '양호'만 고르고 등급(A~D)을 안 고른 상태는 서버에 담기지 않으므로 기기 보관분과 draft를 남긴다
+    const pending=draft.resultTop==='양호'&&!draft.result;
+    if(!_saveQueued[idx]&&!pending){delete hyDraft[idx];_hyLocalDel(d);}
     showToast('✅ 자동 저장됨','ok');
     hyReRender(idx);
     updateMarkerIcon(idx);
     updateStats();
     updateListItem(idx);
-  }catch(e){showToast('저장 실패: '+(e?.message||''),'err');}
+  }catch(e){
+    // 서버에 못 넣어도 이 기기에는 보관돼 있어 다시 열면 그대로 보인다
+    const needResult=/result/i.test(e?.message||'')&&/null/i.test(e?.message||'');
+    showToast(needResult?'사용가부(양호/고장)를 고르면 서버에 저장됩니다 — 입력한 값은 이 기기에 보관됨':'저장 실패 — 입력한 값은 이 기기에 보관됨 ('+(e?.message||'')+')','err');
+  }
   finally{
     _saveInFlight[idx]=false;
     if(_saveQueued[idx]){_saveQueued[idx]=false;hySaveNow(idx);} // 밀린 변경 재저장
