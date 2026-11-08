@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/pick.js — 개별 선택 후 지도에 표시 · 조 재배정 */
-AppFiles.reg('js/pick.js','v3.13.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/pick.js','v3.14.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 개별 선택 후 지도에 표시 ━━
 function togglePickMode(){
@@ -33,6 +33,55 @@ function pickSelectAllVisible(){
   renderList();
   if(n)showToast(`${n}개 추가로 선택됨 (총 ${pickedIds.size}개)`,'ok');
   else showToast('추가할 항목이 없습니다 (이미 다 선택됨)','err');
+}
+/* ── 선택한 소화전 한꺼번에 완료 처리 / 완료 해제 (v3.14.0, 관리자가 아니어도 가능) ──
+   ☑ 선택 → (조를 고르고) '보이는 전체 선택' → ✓ 완료 처리 / ↺ 완료 해제.
+   완료일은 상단 점검일자. 폐전 소화전은 건너뜀. 200개씩 묶어 저장하고, 변경 이력도 한 번에 기록한다. */
+async function pickBulkDone(done){
+  if(!currentProject)return;
+  const pid=currentProject.id;
+  const sel=items.filter(d=>pickedIds.has(d.id));
+  if(!sel.length){showToast('먼저 소화전을 선택하세요','err');return;}
+  const targets=sel.filter(d=>!isClosed(d)&&(done?!doneMap[d.id]:!!doneMap[d.id]));
+  const skipClosed=sel.filter(isClosed).length;
+  if(!targets.length){showToast(done?'선택한 소화전이 이미 모두 완료입니다':'선택한 소화전 중 완료된 것이 없습니다','err');return;}
+  const dateStr=getInspDate();
+  if(!confirm(done
+    ?`선택한 ${targets.length}개를 완료 처리할까요?\n(완료일: ${dateStr}${skipClosed?` · 폐전 ${skipClosed}개는 건너뜀`:''})`
+    :`선택한 ${targets.length}개의 완료를 해제할까요?`))return;
+  const c=SupabaseUtil.getClient();
+  const doneAt=localDateToIso(dateStr);
+  let ok=[];
+  try{
+    for(let i=0;i<targets.length;i+=200){
+      const chunk=targets.slice(i,i+200);
+      showToast(`${done?'완료 처리':'완료 해제'} 중… ${i}/${targets.length}`,'');
+      if(done){
+        await SupabaseUtil.upsert('hydmap_done',chunk.map(d=>({item_id:d.id,inspection_id:pid,done_at:doneAt})),'item_id');
+      }else{
+        const {error}=await c.from('hydmap_done').delete().in('item_id',chunk.map(d=>d.id)).eq('inspection_id',pid);
+        if(error)throw new Error(error.message);
+      }
+      ok=ok.concat(chunk);
+    }
+  }catch(e){
+    showToast(`저장 실패 (${ok.length}/${targets.length}개 처리됨): ${e?.message||''}`,'err');
+  }
+  if(!ok.length)return;
+  // 화면 반영
+  ok.forEach(d=>{
+    if(done)doneMap[d.id]={done_at:doneAt};else delete doneMap[d.id];
+    const idx=items.indexOf(d);
+    const mk=overlays[idx]?.overlay?.getContent?.();if(mk)mk.classList.toggle('done',done);
+    if(document.getElementById(`item-${idx}`))updateListItem(idx);
+  });
+  if(activeIdx>=0&&ok.includes(items[activeIdx]))hyReRender(activeIdx); // 열린 카드의 완료 버튼
+  updateStats();
+  // 변경 이력 (한 번에)
+  const actor=getInspName()||null;
+  const rows=ok.map(d=>({inspection_id:pid,item_id:d.id,item_name:d.name,action:done?'점검 완료':'완료 취소',detail:{bulk:true,...(done?{to:dateStr}:{})},actor}));
+  for(let i=0;i<rows.length;i+=200)SupabaseUtil.insert('hydmap_history',rows.slice(i,i+200)).catch(e=>console.warn('변경 이력 기록 실패',e));
+  if(ok.length===targets.length)showToast(`${done?'✓ 완료 처리':'↺ 완료 해제'} ${ok.length}개`+(skipClosed&&done?` (폐전 ${skipClosed}개 건너뜀)`:''),'ok');
 }
 function showRegroupModal(){
   if(!requireAdmin())return;

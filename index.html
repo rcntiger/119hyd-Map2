@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.13.0';
+const APP_VERSION = 'v3.14.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -167,6 +167,10 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
           <div style="display:flex;gap:6px">
             <button class="fbtn" onclick="pickSelectAllVisible()" style="flex:1;font-size:11.5px;padding:5px 9px">☑ 보이는 전체 선택</button>
             <button class="fbtn" onclick="pickClearAll()" style="flex:1;font-size:11.5px;padding:5px 9px">☐ 전체 해제</button>
+          </div>
+          <div style="display:flex;gap:6px"><!-- 선택한 소화전 한꺼번에 완료·해제 (pick.js, 누구나) -->
+            <button class="fbtn" onclick="pickBulkDone(true)" style="flex:1;font-size:11.5px;padding:5px 9px;font-weight:700;border-color:#22c55e;color:#22c55e">✓ 완료 처리</button>
+            <button class="fbtn" onclick="pickBulkDone(false)" style="flex:1;font-size:11.5px;padding:5px 9px;font-weight:700">↺ 완료 해제</button>
           </div>
           <button class="fbtn admin-only" onclick="showRegroupModal()" style="font-size:11.5px;padding:6px 9px;font-weight:700;border-color:var(--lo);color:var(--lo)">🔀 선택한 소화전 조 변경 (관리자)</button>
         </div>
