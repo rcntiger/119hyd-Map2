@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/filter.js — 그룹 필터 · 정렬 · 축소 시 마커 숨김 · 필터 적용 · 통계 */
-AppFiles.reg('js/filter.js','v3.12.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/filter.js','v3.13.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 그룹 필터 (119hyd-inspec과 동일하게 네이티브 select 드롭다운 사용 — 모바일에서 작은 필터 알약 버튼이 잘 눌리지 않는 문제 해결) ━━
 function buildGroupFilter(){
@@ -86,6 +86,7 @@ function isHidden(d){
   if(quickFilter==='overlap'&&!pickedFilterActive&&!ovlInStack(d))return true;
   if(quickFilter==='closed'&&!pickedFilterActive&&!isClosed(d))return true; // 모아 보기 '폐전만'
   if(quickFilter==='old'&&!pickedFilterActive&&!isOld(d))return true; // 모아 보기 '노후만' (old.js)
+  if(typeSel.size&&!pickedFilterActive&&!typeSel.has(_typeKey(d)))return true; // 식구분에서 고른 종류만 (v3.13.0)
   return false;
 }
 // 목록에서만 쓰는 숨김 여부. 모아 보기 '좌표없음만'은 목록만 거른다
@@ -94,7 +95,32 @@ function isListHidden(d){
   return isHidden(d)||(quickFilter==='nocoord'&&!pickedFilterActive&&(!!(d.lat&&d.lng)||isClosed(d)));
 }
 let sortMode='';
+/* ── 식구분 종류 고르기 (v3.13.0) ──
+   [식구분]을 누르면 종류별 정렬과 함께 종류 버튼 줄이 나오고, 고른 종류만 목록과 지도에 보인다(여러 개 가능).
+   아무것도 안 고르면 전체. [식구분]을 다시 누르면(또는 다른 정렬로 바꾸면) 정렬·선택이 함께 풀린다.
+   종류 = 엑셀 '식구분' 값 → 없으면 카드에서 입력한 종류 → 둘 다 없으면 '미확인' (hyTypeOf, 정렬과 같은 기준) */
+const typeSel=new Set();
+const TYPE_ORDER=['ground','underground','emergency','ugdevice','unknown'];
+function _typeKey(d){return hyTypeOf(d)||'unknown';}
+function renderTypeRow(){
+  const row=document.getElementById('typeRow');if(!row)return;
+  if(sortMode!=='type'||!items.length){row.style.display='none';row.innerHTML='';return;}
+  const cnt={};
+  items.forEach(d=>{if(!_baseHidden(d)){const k=_typeKey(d);cnt[k]=(cnt[k]||0)+1;}}); // 지금 범위(그룹·검색)의 개수
+  const label=k=>k==='unknown'?'❔ 미확인':`${HY_TYPE_ICON[k]||''} ${HY_TYPE_LABEL[k]||k}`;
+  row.innerHTML=TYPE_ORDER.filter(k=>cnt[k]||typeSel.has(k))
+    .map(k=>`<button class="fbtn type-chip${typeSel.has(k)?' active':''}" onclick="toggleTypeSel('${k}')" title="${typeSel.has(k)?'선택 해제':'이 종류만 목록과 지도에 보기'}">${label(k)} <b>${cnt[k]||0}</b></button>`).join('')
+    +(typeSel.size?`<button class="fbtn type-chip" onclick="clearTypeSel()" title="종류 선택 모두 풀기">✕ 전체</button>`:'');
+  row.style.display='flex';
+}
+function toggleTypeSel(k){
+  if(typeSel.has(k))typeSel.delete(k);else typeSel.add(k);
+  closeIw();
+  applyFilter(); // 숨김 갱신 + 버튼 줄 갱신
+}
+function clearTypeSel(){typeSel.clear();applyFilter();}
 function setSort(mode){
+  if(sortMode==='type'&&mode!=='type'||sortMode===mode)typeSel.clear(); // 식구분을 끄거나 다른 정렬로 바꾸면 종류 선택도 풀림
   if(sortMode===mode){
     sortMode='';
     document.getElementById('sortName')?.classList.remove('active');
@@ -236,6 +262,7 @@ function _cullSync(){
 }
 function applyFilter(){
   filterText=document.getElementById('searchInput').value.trim();
+  renderTypeRow(); // 식구분 종류 버튼 줄 (개수는 그룹·검색 범위 기준)
   ovlRefresh(); // 겹침 묶음에서 지금 범위에 보이는 개수·배지·이름표 갱신 (아래 isHidden이 이 결과를 씀)
   // 모아 보기 대상이 하나도 안 남으면(전부 위치를 지정했거나 겹침을 다 풀었으면) 저절로 해제
   if((quickFilter==='nocoord'&&!ncCount())||(quickFilter==='overlap'&&!ovlStackCount().groups)||(quickFilter==='closed'&&!closedCount())||(quickFilter==='old'&&(!oldOn||!oldCount())))quickFilter='';

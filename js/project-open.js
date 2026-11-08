@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project-open.js — 계획 열기/닫기 · 계획 데이터 불러오기 */
-AppFiles.reg('js/project-open.js','v3.12.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project-open.js','v3.13.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 프로젝트 열기 ━━
 async function openProject(proj){
@@ -148,6 +148,8 @@ async function loadProjectData(){
     displayIndexOrder=items.map((d,i)=>i).sort((ia,ib)=>items[ia].name.localeCompare(items[ib].name,'ko'));
     document.getElementById('sortName')?.classList.add('active');
     document.getElementById('sortAddr')?.classList.remove('active');
+    document.getElementById('sortType')?.classList.remove('active'); // 다시 불러오면 식구분 정렬·종류 선택도 풀림
+    typeSel.clear();
     // 그룹 목록
     groups=[...new Set(items.map(d=>String(d.group_name||'').trim()).filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,'ko',{numeric:true,sensitivity:'base'}));

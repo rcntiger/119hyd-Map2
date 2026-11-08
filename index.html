@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.12.2';
+const APP_VERSION = 'v3.13.0';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -176,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
           <button class="fbtn" onclick="clearPickedFilter()" style="font-size:11.5px;padding:4px 9px">전체 보기로</button>
         </div>
         <!-- 모아 보기: 좌표 없는 소화전 / 같은 자리에 겹친 소화전 (해당하는 것이 있을 때만 보임) -->
+        <div id="typeRow" class="type-row" style="display:none"></div><!-- 식구분 종류 고르기 (filter.js) -->
         <div id="quickRow" class="pc-only" style="display:none;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
       </div>
       <div class="list" id="listEl">
