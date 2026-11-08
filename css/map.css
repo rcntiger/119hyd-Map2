@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.5"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.6"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -139,3 +139,6 @@ html.printing-map .old-panel{display:none!important}
   background:linear-gradient(135deg,rgba(255,255,255,.95) 0 45%,transparent 45%);border-bottom-right-radius:4px}
 .rv-mm-grip::after{content:'';position:absolute;top:4px;left:4px;width:7px;height:7px;border-top:2px solid #374151;border-left:2px solid #374151}
 .rv-minimap.resizing{user-select:none}
+
+/* 점검자 이름이 필요할 때 칸 강조 (auth.js requireInspName) */
+#inspNameGlobal.need-input{outline:2px solid #ef4444;outline-offset:1px}

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -76,7 +76,7 @@ function _hyLocalSet(idx){
 }
 function _hyLocalDel(d){const k=_hyLocalKey(d);if(k)safeStorage.remove(k);}
 // 입력한 항목이 하나라도 있는지
-function _hyHasAny(dr){return !!(dr.paint||dr.insul||dr.protect||dr.roadmark||dr.result||dr.resultTop||(dr.defect_detail||'').trim());}
+function _hyHasAny(dr){return !!((dr.paint&&!dr._defPaint)||dr.insul||(dr.protect&&!dr._defProtect)||dr.roadmark||dr.result||dr.resultTop||(dr.defect_detail||'').trim());} // 기본값만 있는 것은 제외
 function hyGetDraft(idx,d){
   if(!hyDraft[idx]){
     // 이 기기에 보관해 둔 입력 상태가 있으면 그것부터 (종류는 항상 엑셀 값 우선)
@@ -84,6 +84,7 @@ function hyGetDraft(idx,d){
     if(local){
       const excelType=getExcelHydrantType(d);
       hyDraft[idx]={...local,hydrant_type:excelType||local.hydrant_type||hydrantMap[d.id]?.hydrant_type||null,_fromExcel:false};
+      _hyApplyDefaults(hyDraft[idx]);
       return hyDraft[idx];
     }
     let rec=hydrantMap[d.id];
@@ -101,8 +102,18 @@ function hyGetDraft(idx,d){
       defect_detail:rec?.defect_detail||'',
       _fromExcel:!rec&&!!excelType
     };
+    _hyApplyDefaults(hyDraft[idx]);
   }
   return hyDraft[idx];
+}
+/* ── 기본값 (v3.14.6): 도색상태 '양호'(지상식·지하식) · 보호틀 '미설치'(지상식) ──
+   아직 입력하지 않은 항목만 미리 골라 둔다. 다른 항목을 저장할 때 함께 저장되며,
+   기본값만 있는 상태는 '입력한 것'으로 치지 않아 카드를 열기만 해서는 저장되지 않는다(_defPaint·_defProtect 표시). */
+function _hyApplyDefaults(dr){
+  const t=dr.hydrant_type;
+  if(!t||hyIsSimpleType(t))return;
+  if(!dr.paint){dr.paint='yes';dr._defPaint=true;}
+  if(t==='ground'&&!dr.protect){dr.protect='no';dr._defProtect=true;}
 }
 function hyReRender(idx){
   const d=items[idx],ov=overlays[idx];
@@ -120,6 +131,7 @@ function hySetType(idx,val){
   draft.hydrant_type=(draft.hydrant_type===val)?null:val;
   // 소화전 ↔ 비상소화장치로 바꾸면 점검 항목이 달라지므로 고른 결과를 비운다
   if(hyIsSimpleType(before)!==hyIsSimpleType(draft.hydrant_type)){draft.result=null;draft.resultTop=null;draft.defect_detail='';}
+  _hyApplyDefaults(draft); // 종류가 정해지면 기본값
   hyReRender(idx);
   hyMaybeAutoSave(idx);
 }
@@ -127,7 +139,11 @@ function hySetField(idx,field,val){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
   if(field==='defect_detail'){draft.defect_detail=val;_hyLocalSet(idx);return;} // 서버 저장은 입력칸을 벗어날 때(onblur)
-  draft[field]=(val===''||draft[field]===val)?null:val; // 목록에서 '선택'으로 되돌리면 비움
+  const defKey=field==='paint'?'_defPaint':field==='protect'?'_defProtect':null;
+  if(defKey&&draft[defKey]){ // 기본값이 골라진 항목을 처음 누름: 같은 값이면 '확인'으로 유지, 다른 값이면 그 값으로
+    delete draft[defKey];
+    draft[field]=val===''?null:val;
+  }else draft[field]=(val===''||draft[field]===val)?null:val; // 목록에서 '선택'으로 되돌리면 비움
   // 값 하나를 고르면 해당 접이식 섹션은 자동으로 접어서 카드를 다시 컴팩트하게 만든다.
   // (단, 보호틀·노면표시는 항목이 2개라 하나 고르자마자 접으면 나머지를 못 고르니 자동 접힘 제외)
   if(field==='paint'||field==='insul'){

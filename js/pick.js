@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/pick.js — 개별 선택 후 지도에 표시 · 조 재배정 */
-AppFiles.reg('js/pick.js','v3.14.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/pick.js','v3.14.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 개별 선택 후 지도에 표시 ━━
 function togglePickMode(){
@@ -45,6 +45,7 @@ async function pickBulkDone(done){
   const targets=sel.filter(d=>!isClosed(d)&&(done?!doneMap[d.id]:!!doneMap[d.id]));
   const skipClosed=sel.filter(isClosed).length;
   if(!targets.length){showToast(done?'선택한 소화전이 이미 모두 완료입니다':'선택한 소화전 중 완료된 것이 없습니다','err');return;}
+  if(done&&!requireInspName())return; // 완료 처리는 점검자 이름 필수 (해제는 막지 않음)
   const dateStr=getInspDate();
   if(!confirm(done
     ?`선택한 ${targets.length}개를 완료 처리할까요?\n(완료일: ${dateStr}${skipClosed?` · 폐전 ${skipClosed}개는 건너뜀`:''})`

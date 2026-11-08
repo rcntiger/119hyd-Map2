@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/auth.js — 관리자 로그인 · 점검자/점검일자 */
-AppFiles.reg('js/auth.js','v3.14.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/auth.js','v3.14.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 관리자 로그인 (Supabase Auth) ══════════
    로그인 세션은 SupabaseUtil의 같은 클라이언트에 붙으므로, 이후 모든 DB 요청이 관리자 권한으로 나간다.
@@ -62,7 +62,19 @@ function requireAdmin(){
   return false;
 }
 
-function saveInspName(){safeStorage.set('hy_insp_name',document.getElementById('inspNameGlobal').value.trim());}
+// 점검자 이름은 하루만 기억 (v3.14.6) — 입력한 날짜를 함께 저장하고, 날짜가 바뀌면 앱을 열 때 비운다 (init.js)
+// 다른 사람이 이름을 바꾸지 않고 이어서 점검해 엉뚱한 이름으로 저장되는 것을 막기 위함
+function saveInspName(){
+  safeStorage.set('hy_insp_name',document.getElementById('inspNameGlobal').value.trim());
+  safeStorage.set('hy_insp_name_date',localDate());
+}
+// 점검자 이름이 없으면 알림을 띄우고 이름 칸으로 (완료·한꺼번에 완료에서 씀)
+function requireInspName(){
+  if(getInspName())return true;
+  showToast('상단에 점검자 이름을 입력하세요','err');
+  const el=document.getElementById('inspNameGlobal');if(el){el.focus();el.classList.add('need-input');setTimeout(()=>el.classList.remove('need-input'),2500);}
+  return false;
+}
 function saveInspDate(){safeStorage.set('hy_insp_date',document.getElementById('inspDateGlobal').value);}
 function getInspName(){return document.getElementById('inspNameGlobal')?.value.trim()||'';}
 function getInspDate(){return document.getElementById('inspDateGlobal')?.value||localDate();}
