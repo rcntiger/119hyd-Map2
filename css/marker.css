@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.14.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.14.1"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
@@ -9,9 +9,14 @@
 /* 마커 툴팁 */
 .mk-tooltip{position:fixed;background:rgba(15,23,42,.92);color:#f1f5f9;font-size:15px;font-weight:600;padding:8px 16px;border-radius:10px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9999;opacity:0;transition:opacity .15s;transform:translateX(-50%)}
 .mk-tooltip::after{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:4px solid transparent;border-bottom-color:rgba(15,23,42,.92)}
-.kk-marker.done{background:#22c55e!important;width:12px!important;height:12px!important;box-shadow:0 2px 8px rgba(34,197,94,.6)!important}
+/* 완료: 녹색 + 흰 ✓ (v3.14.1 — 녹색은 완료만 뜻함, 조 색에서 녹색 제외). 종류 아이콘 대신 ✓를 보여 줌 */
+.kk-marker.done{background:#22c55e!important;width:14px!important;height:14px!important;box-shadow:0 2px 8px rgba(34,197,94,.6)!important}
+.kk-marker.done>*{display:none!important}
+.kk-marker.done::before{content:'✓';color:#fff;font:900 10px/1 sans-serif;pointer-events:none}
+.kk-marker.done.active-mk::before{font-size:14px}
 .kk-marker.active-mk{width:23px!important;height:23px!important;border:3px solid #fff!important;box-shadow:0 0 0 3px rgba(255,255,255,.5),0 3px 10px rgba(0,0,0,.7)!important}
-.kk-marker.g1{background:#3b82f6}.kk-marker.g2{background:#ef4444}.kk-marker.g3{background:#a78bfa}.kk-marker.g4{background:#06b6d4}.kk-marker.g5{background:#10b981}.kk-marker.g6{background:#ec4899}.kk-marker.g0{background:#7d8590}
+/* 조 색 (v3.14.1): 카카오맵 바탕(연녹 공원·하늘색 물·노랑/주황 도로)과 완료 녹색·노후 주황을 피한 진한 색 — config.js GROUP_COLORS와 같은 값 */
+.kk-marker.g1{background:#1d4ed8}.kk-marker.g2{background:#dc2626}.kk-marker.g3{background:#7c3aed}.kk-marker.g4{background:#475569}.kk-marker.g5{background:#c026d3}.kk-marker.g6{background:#92400e}.kk-marker.g0{background:#7d8590}
 
 /* 팝업 */
 
