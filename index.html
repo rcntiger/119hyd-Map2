@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.14.3';
+const APP_VERSION = 'v3.14.4';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
         </div>
         <div class="rv-body">
           <div id="rvMap" style="width:100%;height:100%"></div>
-          <div class="rv-minimap" id="rvMinimap"><div id="rvMinimapInner" style="width:100%;height:100%"></div></div>
+          <div class="rv-minimap" id="rvMinimap"><div id="rvMinimapInner" style="width:100%;height:100%"></div><div class="rv-mm-grip" id="rvMmGrip" title="끌어서 크기 조절"></div></div>
         </div>
       </div>
       <div id="diagPanel">
