@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.7'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -76,7 +76,7 @@ function _hyLocalSet(idx){
 }
 function _hyLocalDel(d){const k=_hyLocalKey(d);if(k)safeStorage.remove(k);}
 // 입력한 항목이 하나라도 있는지
-function _hyHasAny(dr){return !!((dr.paint&&!dr._defPaint)||dr.insul||(dr.protect&&!dr._defProtect)||dr.roadmark||dr.result||dr.resultTop||(dr.defect_detail||'').trim());} // 기본값만 있는 것은 제외
+function _hyHasAny(dr){return !!((dr.paint&&!dr._defPaint)||dr.insul||(dr.protect&&!dr._defProtect)||dr.roadmark||((dr.result||dr.resultTop)&&!dr._defResult)||(dr.defect_detail||'').trim());} // 기본값만 있는 것은 제외
 function hyGetDraft(idx,d){
   if(!hyDraft[idx]){
     // 이 기기에 보관해 둔 입력 상태가 있으면 그것부터 (종류는 항상 엑셀 값 우선)
@@ -114,6 +114,7 @@ function _hyApplyDefaults(dr){
   if(!t||hyIsSimpleType(t))return;
   if(!dr.paint){dr.paint='yes';dr._defPaint=true;}
   if(t==='ground'&&!dr.protect){dr.protect='no';dr._defProtect=true;}
+  if(!dr.result&&!dr.resultTop){dr.resultTop='양호';dr.result='B';dr._defResult=true;} // 사용가부 '양호 · B등급' (v3.14.7)
 }
 function hyReRender(idx){
   const d=items[idx],ov=overlays[idx];
@@ -155,7 +156,11 @@ function hySetField(idx,field,val){
 function hySetResultTop(idx,val){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
-  draft.resultTop=(draft.resultTop===val)?null:val;
+  if(draft._defResult){ // 기본값(양호 B)이 골라진 상태에서 처음 누름: '양호'면 확인으로 유지, 다른 것이면 그 값으로
+    delete draft._defResult;
+    if(val==='양호'){hyReRender(idx);hyMaybeAutoSave(idx);return;}
+    draft.resultTop=val;
+  }else draft.resultTop=(draft.resultTop===val)?null:val;
   if(draft.resultTop==='양호'){
     if(!['A','B','C','D'].includes(draft.result))draft.result=null;
   }else if(draft.resultTop){
@@ -230,6 +235,7 @@ function hySetGrade(idx,val){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
   draft.result=val;
+  delete draft._defResult; // 등급을 직접 고름
   hyReRender(idx);
   hyMaybeAutoSave(idx);
 }
@@ -254,11 +260,11 @@ function hyMaybeAutoSave(idx){
 function flushPendingAutoSaves(){
   Object.keys(_autoSaveTimers).forEach(k=>{clearTimeout(_autoSaveTimers[k]);delete _autoSaveTimers[k];hySaveNow(+k);});
 }
-async function hySaveNow(idx){
+async function hySaveNow(idx,force){ // force: 기본값만 있어도 저장 (완료 버튼, v3.14.7)
   const d=items[idx];if(!d||!currentProject)return;
   if(_saveInFlight[idx]){_saveQueued[idx]=true;return;} // 진행 중이면 예약만
   const draft=hyGetDraft(idx,d);
-  if(!draft.hydrant_type||!(_hyHasAny(draft)||hydrantMap[d.id]))return; // 종류가 없거나 입력한 것이 없으면 저장하지 않음 (기기 보관분은 남음)
+  if(!draft.hydrant_type||!(force||_hyHasAny(draft)||hydrantMap[d.id]))return; // 종류가 없거나 입력한 것이 없으면 저장하지 않음 (기기 보관분은 남음)
   const name=getInspName();
   if(!name){showToast('상단에 점검자 이름을 입력하세요','err');return;}
   const record={

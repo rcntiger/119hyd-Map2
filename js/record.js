@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/record.js — 완료 토글 · 점검일 · 메모 */
-AppFiles.reg('js/record.js','v3.14.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/record.js','v3.14.7'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 완료 토글 ━━
 async function toggleDone(idx){
@@ -21,6 +21,13 @@ async function toggleDone(idx){
       await SupabaseUtil.upsert('hydmap_done',{item_id:d.id,inspection_id:currentProject.id,done_at:doneAt},'item_id');
       doneMap[d.id]={done_at:doneAt};showToast(`점검완료 ✓ (${dateStr})`,'ok');
       logHistory(d,'점검 완료',{to:dateStr});
+      // 완료를 누르면 점검 입력도 함께 저장 — 기본값(도색 양호·보호틀 미설치·양호 B)만 있어도 기록이 남게 (v3.14.7)
+      // (소화장치 2종은 기본값이 없으므로 직접 입력한 것이 있을 때만)
+      const dr=hyGetDraft(idx,d);
+      if(dr.hydrant_type&&(!hyIsSimpleType(dr.hydrant_type)||_hyHasAny(dr))){
+        clearTimeout(_autoSaveTimers[idx]);delete _autoSaveTimers[idx];
+        hySaveNow(idx,true);
+      }
     }
   }catch(e){showToast('저장 실패','err');return;}
   // UI 갱신
