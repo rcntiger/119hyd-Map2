@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/record.js — 완료 토글 · 점검일 · 메모 */
-AppFiles.reg('js/record.js','v3.14.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/record.js','v3.14.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 완료 토글 ━━
 async function toggleDone(idx){
@@ -14,10 +14,12 @@ async function toggleDone(idx){
       showToast('점검완료 취소','');
     }else{
       // 완료
-      const now=new Date().toISOString();
-      await SupabaseUtil.upsert('hydmap_done',{item_id:d.id,inspection_id:currentProject.id,done_at:now},'item_id');
-      doneMap[d.id]={done_at:now};showToast('점검완료 ✓','ok');
-      logHistory(d,'점검 완료');
+      // 완료일 = 상단 점검일자 (v3.14.3 — 예전엔 누른 날(오늘)로 저장돼 지난 날짜로 입력해도 카드에 오늘로 나왔다)
+      const dateStr=getInspDate();
+      const doneAt=localDateToIso(dateStr);
+      await SupabaseUtil.upsert('hydmap_done',{item_id:d.id,inspection_id:currentProject.id,done_at:doneAt},'item_id');
+      doneMap[d.id]={done_at:doneAt};showToast(`점검완료 ✓ (${dateStr})`,'ok');
+      logHistory(d,'점검 완료',{to:dateStr});
     }
   }catch(e){showToast('저장 실패','err');return;}
   // UI 갱신

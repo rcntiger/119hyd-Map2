@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/history.js — 변경 이력 (hydmap_history) */
-AppFiles.reg('js/history.js','v3.14.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/history.js','v3.14.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 변경 이력 ══════════
    위치 수정·점검 입력·완료·메모·사진 변경을 hydmap_history 표에 한 줄씩 쌓는다 (수정·삭제 불가, 계속 누적).
@@ -59,7 +59,7 @@ function _histText(h){
     case '메모':return `${esc((x.from||'').slice(0,60))||'(없음)'} → <b>${esc((x.to||'').slice(0,60))||'(없음)'}</b>`;
     case '메모 삭제':return esc((x.from||'').slice(0,80));
     case '완료일 변경':return `→ ${esc(x.to||'')}`;
-    case '점검 완료':case '완료 취소':return x.bulk?`여러 개 한꺼번에${x.to?` · 완료일 ${esc(x.to)}`:''}`:''; // 선택 일괄 처리 (pick.js)
+    case '점검 완료':case '완료 취소':return [x.bulk?'여러 개 한꺼번에':'',x.to?`완료일 ${esc(x.to)}`:''].filter(Boolean).join(' · '); // 일괄 처리 (pick.js) · 완료일
     case '조 변경':return `${esc(x.from||'(미지정)')} → <b>${esc(x.to||'')}</b>`;
     case '사진 추가':case '사진 삭제':return x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">사진 보기</a>`:'';
     default:return '';

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.14.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.14.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -330,7 +330,7 @@ function renderPopup(iwEl,idx,d,iw){
 
     </div>
 
-    ${savedRec?`<div class="hy-saved-info">마지막 저장: ${esc(savedRec.insp_name||'')} · ${savedRec.updated_at?new Date(savedRec.updated_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):''}</div>`:''}
+    ${savedRec?`<div class="hy-saved-info">점검: ${esc(savedRec.insp_name||'')}${savedRec.insp_date?` · ${esc(savedRec.insp_date)}`:''}${savedRec.updated_at?` (저장 ${new Date(savedRec.updated_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})})`:''}</div>`:''}<!-- 저장된 점검자·점검일 (v3.14.3) -->
 
     <div class="iw-divider"></div>
 
