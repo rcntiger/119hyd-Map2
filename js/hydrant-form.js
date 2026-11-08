@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -127,7 +127,7 @@ function hySetField(idx,field,val){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
   if(field==='defect_detail'){draft.defect_detail=val;_hyLocalSet(idx);return;} // 서버 저장은 입력칸을 벗어날 때(onblur)
-  draft[field]=(draft[field]===val)?null:val;
+  draft[field]=(val===''||draft[field]===val)?null:val; // 목록에서 '선택'으로 되돌리면 비움
   // 값 하나를 고르면 해당 접이식 섹션은 자동으로 접어서 카드를 다시 컴팩트하게 만든다.
   // (단, 보호틀·노면표시는 항목이 2개라 하나 고르자마자 접으면 나머지를 못 고르니 자동 접힘 제외)
   if(field==='paint'||field==='insul'){
