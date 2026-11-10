@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.14.8'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.14.9'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -221,9 +221,11 @@ function renderPopup(iwEl,idx,d,iw){
   const color=groupColor(d);
   const memo=memoShown(d); // 저장 전 입력 중인 글자가 있으면 그것 (record.js)
   const photos=photoMap[d.id]||[];
-  // 설치년도는 '소화전 종류' 줄 오른쪽에 따로 표시하고, 나머지 추가정보만 위치 아래에 표시
+  // 설치년도는 '식구분' 줄 오른쪽에 따로 표시하고, 나머지 추가정보만 위치 아래에 표시
   const _isYearKey=k=>/^설치\s*(연|년)도$/.test(String(k).trim());
   const installYear=d.extra?(Object.entries(d.extra).find(([k])=>_isYearKey(k))||[])[1]:'';
+  // 카드에는 연도만 표시: '1996.10.30'이어도 '설치 1996년' (읽을 수 없는 값이면 그대로)
+  const installYearText=installYear?(()=>{const p=_oldParse(installYear);return p?p.y+'년':String(installYear);})():'';
   const extraStr=d.extra?Object.entries(d.extra).filter(([k])=>!String(k).startsWith('_')&&!_isYearKey(k)&&String(k).replace(/\s/g,'')!=='지번주소').map(([k,v])=>`${k}: ${v}`).join(' · '):'';
   const draft=hyGetDraft(idx,d);
   const st=hyStatusInfo(hydrantMap[d.id]);
@@ -270,13 +272,13 @@ function renderPopup(iwEl,idx,d,iw){
     <div class="iw-divider"></div>
 
     <div id="dateRow-${idx}" style="display:${isDone?'flex':'none'}" class="iw-date-row">
-      <label>📅 점검일자</label>
+      <label>📅 일자</label>
       <input type="date" value="${doneDate}" onchange="updateDoneDate(${idx},this.value)">
     </div>
 
     <div id="hyForm-${idx}">
     <div class="hy-section">
-      ${hyTypeView(idx,d,draft,'소화전 종류',installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치년도 ${esc(String(installYear))}${isOld(d)?' <span class="old-badge">⏳ 노후</span>':''}</span>`:'')}
+      ${hyTypeView(idx,d,draft,'식구분',installYear?`<span style="margin-left:auto;color:#3b82f6;font-weight:700">설치 ${esc(installYearText)}${isOld(d)?' <span class="old-badge">⏳ 노후</span>':''}</span>`:'')}
     </div>
 
     <div class="hy-collapsible-row">

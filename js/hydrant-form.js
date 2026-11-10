@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.8'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.9'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -220,7 +220,7 @@ function hyEmergencyFormHtml(idx,draft){
   const S=HY_SIMPLE[draft.hydrant_type]||HY_SIMPLE.emergency;
   return `
     <div class="hy-section">
-      ${hyTypeView(idx,items[idx],draft,'시설 종류','')}
+      ${hyTypeView(idx,items[idx],draft,'식구분','')}
     </div>
     <div class="hy-section" style="margin-bottom:0">
       <div class="hy-label">이상유무 <span class="hy-req">필수</span> <span style="text-transform:none;font-weight:600;color:#94a3b8">· ${S.hint}</span></div>
