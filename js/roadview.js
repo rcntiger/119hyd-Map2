@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.9'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.10'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -16,12 +16,19 @@ function openRvAt(latLng){
   if(!rvInstance)rvInstance=new kakao.maps.Roadview(document.getElementById('rvMap'));
   if(!rvMinimapInst){
     rvMinimapInst=new kakao.maps.Map(document.getElementById('rvMinimapInner'),{center:latLng,level:3});
-    rvOverlay=new kakao.maps.CustomOverlay({position:latLng,content:'<div style="width:14px;height:14px;border-radius:50%;background:#ef4444;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)"></div>',zIndex:10});
+    // ③ 로드뷰가 있는 길을 파란 선으로 (카카오맵과 같은 도로선)
+    try{new kakao.maps.RoadviewOverlay().setMap(rvMinimapInst);}catch(e){}
+    // ① 카메라 표시: 가운데 점 + 보고 있는 방향의 부채꼴 시야 (② 로드뷰를 돌리면 같이 회전)
+    rvOverlay=new kakao.maps.CustomOverlay({position:latLng,content:_rvCamEl(),xAnchor:.5,yAnchor:.5,zIndex:10});
     rvOverlay.setMap(rvMinimapInst);
     kakao.maps.event.addListener(rvInstance,'position_changed',()=>{
       const pos=rvInstance.getPosition();
       if(pos&&rvMinimapInst){rvMinimapInst.setCenter(pos);rvOverlay.setPosition(pos);}
     });
+    kakao.maps.event.addListener(rvInstance,'viewpoint_changed',_rvCamSync);
+    kakao.maps.event.addListener(rvInstance,'init',_rvCamSync);
+    // ④ 미니맵을 누르면 그 근처 로드뷰로 이동 (파란 선 위를 누르면 됨)
+    kakao.maps.event.addListener(rvMinimapInst,'click',e=>_rvGoTo(e.latLng,true));
   }else{rvMinimapInst.setCenter(latLng);rvOverlay.setPosition(latLng);}
   // PC에서는 미니맵을 기본으로 켬 (끈 적이 있으면 그 상태를 기억) — 휴대폰은 화면이 작아 꺼진 채 시작 (v3.14.4)
   _rvMmGripInit();
@@ -29,8 +36,35 @@ function openRvAt(latLng){
   const want=window.innerWidth>600&&safeStorage.get('hy_rv_minimap','1')!=='0';
   if(want!==minimapOn)toggleMinimap(true);
   else if(minimapOn)setTimeout(()=>{rvMinimapInst.relayout();rvMinimapInst.setCenter(rvOverlay.getPosition());},50);
+  _rvGoTo(latLng,false);
+}
+// 그 위치에서 가장 가까운 로드뷰(50m 안)로 이동. fromMini: 미니맵을 눌러 옮긴 경우
+function _rvGoTo(latLng,fromMini){
   const client=new kakao.maps.RoadviewClient();
-  client.getNearestPanoId(latLng,50,panoId=>{if(panoId)rvInstance.setPanoId(panoId,latLng);else document.getElementById('rvHint').textContent='로드뷰 없음';});
+  client.getNearestPanoId(latLng,50,panoId=>{
+    if(panoId){
+      rvInstance.setPanoId(panoId,latLng);
+      if(fromMini)document.getElementById('rvHint').textContent=`${latLng.getLat().toFixed(5)}, ${latLng.getLng().toFixed(5)}`;
+    }else if(fromMini)showToast('이 근처에는 로드뷰가 없습니다. 파란 선 위를 눌러 주세요','');
+    else document.getElementById('rvHint').textContent='로드뷰 없음';
+  });
+}
+/* ── 미니맵 카메라 표시 (v3.14.10) ──
+   카카오맵처럼 보고 있는 방향을 부채꼴로 보여 준다. 로드뷰 화면을 돌리면(pan) 부채꼴도 같은 각도로 돈다. */
+let _rvCamRot=null;
+function _rvCamEl(){
+  const el=document.createElement('div');
+  el.className='rv-cam';
+  el.innerHTML='<div class="rv-cam-rot"><svg width="64" height="64" viewBox="0 0 64 64">'
+    +'<path d="M32 32 L16 4.3 A32 32 0 0 1 48 4.3 Z" fill="rgba(239,68,68,.35)" stroke="#ef4444" stroke-width="1.5"/>'
+    +'</svg></div><div class="rv-cam-dot"></div>';
+  _rvCamRot=el.firstChild;
+  return el;
+}
+function _rvCamSync(){
+  if(!_rvCamRot||!rvInstance?.getViewpoint)return;
+  const vp=rvInstance.getViewpoint();
+  if(vp&&isFinite(vp.pan))_rvCamRot.style.transform=`rotate(${vp.pan}deg)`;
 }
 function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
