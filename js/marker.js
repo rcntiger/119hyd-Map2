@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.14.12'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.14.13'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -296,7 +296,7 @@ function renderPopup(iwEl,idx,d,iw){
           <button class="hy-tbtn${draft.insul==='no'?' on':''}" onclick="hySetField(${idx},'insul','no')">재설치</button>
         </div>`):''}
 
-      ${draft.hydrant_type==='ground'?hyCollapsibleField(idx,'protect','🛡️ 보호틀·노면·표지',null,[PROTECT_LABEL[draft.protect],draft.roadmark,draft.sign].filter(Boolean).join('/'),`
+      ${draft.hydrant_type==='ground'?hyCollapsibleField(idx,'protect','🛡️ 보호틀·노면·소화전표지',null,[PROTECT_LABEL[draft.protect],draft.roadmark,draft.sign].filter(Boolean).join('/'),`
         <!-- 보호틀·적색 노면 표시를 한 줄에 목록 2개로 (v3.14.5) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="min-width:0">
