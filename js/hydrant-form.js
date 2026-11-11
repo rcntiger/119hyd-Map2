@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.11'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.12'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -21,7 +21,7 @@ function hyCollapsibleField(idx,field,title,labelMap,rawValue,expandedHtml){
   const summary=labelMap?(labelMap[rawValue]||''):(rawValue||'');
   if(!isOpen){
     return `
-    <div class="hy-section hy-collapsible">
+    <div class="hy-section hy-collapsible hy-coll-${field}">
       <button class="hy-collapse-btn" onclick="hyToggleSection(${idx},'${field}')">
         <span>${title}</span>
         <span class="hy-collapse-val">${summary?esc(summary):'입력'} ▾</span>
@@ -29,7 +29,7 @@ function hyCollapsibleField(idx,field,title,labelMap,rawValue,expandedHtml){
     </div>`;
   }
   return `
-    <div class="hy-section hy-collapsible open">
+    <div class="hy-section hy-collapsible hy-coll-${field} open">
       <button class="hy-collapse-btn open" onclick="hyToggleSection(${idx},'${field}')">
         <span>${title}</span>
         <span class="hy-collapse-val">접기 ▴</span>

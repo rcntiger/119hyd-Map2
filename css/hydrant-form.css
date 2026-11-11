@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/hydrant-form.css — 정보카드 안의 소화전 점검 입력 */
-:root{--appver-hydrant-form:"v3.14.11"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-hydrant-form:"v3.14.12"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 소화전 점검 입력 카드 ── */
 .hy-status-badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin:2px 0 8px}
@@ -9,7 +9,10 @@
 .hy-collapsible.open{flex:1 1 100%}
 .hy-collapse-btn{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;box-sizing:border-box}
 .hy-collapse-btn.open{border-color:#2563eb;background:#eff6ff;border-bottom-left-radius:0;border-bottom-right-radius:0;flex-direction:row;align-items:center;justify-content:space-between}
-.hy-collapse-val{color:#2563eb;font-weight:800;font-size:11px}
+.hy-collapse-val{color:#2563eb;font-weight:800;font-size:11px;white-space:normal;word-break:keep-all;text-align:left}
+/* 지상식: 도색상태는 글자 폭만큼, 보호틀·노면·표지가 남는 폭 전부 (v3.14.12) */
+.hy-collapsible-row:has(.hy-coll-protect:not(.open)) .hy-coll-paint:not(.open){flex:0 1 auto}
+.hy-coll-protect:not(.open){flex:1 1 0}
 .hy-collapse-body{border:1.5px solid #2563eb;border-top:none;border-bottom-left-radius:8px;border-bottom-right-radius:8px;padding:10px 12px;background:#fff}
 .hy-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
 .hy-req{color:#ef4444;font-size:9px;text-transform:none}
