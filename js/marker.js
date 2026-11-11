@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.14.10'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.14.11'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -296,7 +296,7 @@ function renderPopup(iwEl,idx,d,iw){
           <button class="hy-tbtn${draft.insul==='no'?' on':''}" onclick="hySetField(${idx},'insul','no')">재설치</button>
         </div>`):''}
 
-      ${draft.hydrant_type==='ground'?hyCollapsibleField(idx,'protect','🛡️ 보호틀·노면표시',null,(draft.protect||draft.roadmark)?`${PROTECT_LABEL[draft.protect]||''}${draft.protect&&draft.roadmark?' · ':''}${draft.roadmark||''}`:'',`
+      ${draft.hydrant_type==='ground'?hyCollapsibleField(idx,'protect','🛡️ 보호틀·노면·표지',null,[PROTECT_LABEL[draft.protect],draft.roadmark,draft.sign?'표지 '+draft.sign:''].filter(Boolean).join(' · '),`
         <!-- 보호틀·적색 노면 표시를 한 줄에 목록 2개로 (v3.14.5) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="min-width:0">
@@ -315,6 +315,15 @@ function renderPopup(iwEl,idx,d,iw){
               <option value="연석표시형"${draft.roadmark==='연석표시형'?' selected':''}>연석표시형</option>
               <option value="적색복선형"${draft.roadmark==='적색복선형'?' selected':''}>적색복선형</option>
               <option value="연석·적색복선"${draft.roadmark==='연석·적색복선'?' selected':''}>연석·적색복선 모두</option>
+            </select>
+          </div>
+          <div style="min-width:0">
+            <div class="hy-label">소화전표지</div>
+            <select class="hy-select" style="width:100%" onchange="hySetField(${idx},'sign',this.value)">
+              <option value="">선택</option>
+              <option value="미설치"${draft.sign==='미설치'?' selected':''}>미설치</option>
+              <option value="설치"${draft.sign==='설치'?' selected':''}>설치</option>
+              <option value="설치필요"${draft.sign==='설치필요'?' selected':''}>설치필요</option>
             </select>
           </div>
         </div>`):''}

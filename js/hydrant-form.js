@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/hydrant-form.js — 정보카드 안의 소화전 점검 입력 · 자동 저장 */
-AppFiles.reg('js/hydrant-form.js','v3.14.10'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/hydrant-form.js','v3.14.11'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 소화전 점검 입력 (정보카드 내) ══════════ */
 // ━━ 정보카드 컴팩트 UX: 선택사항(도색/보온/보호틀) 항목을 접이식으로 ━━
@@ -76,7 +76,8 @@ function _hyLocalSet(idx){
 }
 function _hyLocalDel(d){const k=_hyLocalKey(d);if(k)safeStorage.remove(k);}
 // 입력한 항목이 하나라도 있는지
-function _hyHasAny(dr){return !!((dr.paint&&!dr._defPaint)||dr.insul||(dr.protect&&!dr._defProtect)||(dr.roadmark&&!dr._defRoadmark)||((dr.result||dr.resultTop)&&!dr._defResult)||(dr.defect_detail||'').trim());} // 기본값만 있는 것은 제외
+let _signColWarned=false; // sign 칸 없음 안내는 한 번만
+function _hyHasAny(dr){return !!((dr.paint&&!dr._defPaint)||dr.insul||(dr.protect&&!dr._defProtect)||(dr.roadmark&&!dr._defRoadmark)||(dr.sign&&!dr._defSign)||((dr.result||dr.resultTop)&&!dr._defResult)||(dr.defect_detail||'').trim());} // 기본값만 있는 것은 제외
 function hyGetDraft(idx,d){
   if(!hyDraft[idx]){
     // 이 기기에 보관해 둔 입력 상태가 있으면 그것부터 (종류는 항상 엑셀 값 우선)
@@ -97,6 +98,7 @@ function hyGetDraft(idx,d){
       insul:rec?.insul||null,
       protect:rec?.protect||null,
       roadmark:rec?.roadmark||null,
+      sign:rec?.sign||null,
       result:rec?.result||null,
       resultTop:rec?.result?(['A','B','C','D'].includes(rec.result)?'양호':rec.result):null,
       defect_detail:rec?.defect_detail||'',
@@ -115,6 +117,7 @@ function _hyApplyDefaults(dr){
   if(!dr.paint){dr.paint='yes';dr._defPaint=true;}
   if(t==='ground'&&!dr.protect){dr.protect='no';dr._defProtect=true;}
   if(t==='ground'&&!dr.roadmark){dr.roadmark='미설치';dr._defRoadmark=true;} // 적색 노면 표시 '미설치' (v3.14.8)
+  if(t==='ground'&&!dr.sign){dr.sign='미설치';dr._defSign=true;} // 소화전표지 '미설치' (v3.14.11)
   if(!dr.result&&!dr.resultTop){dr.resultTop='양호';dr.result='B';dr._defResult=true;} // 사용가부 '양호 · B등급' (v3.14.7)
 }
 function hyReRender(idx){
@@ -141,13 +144,13 @@ function hySetField(idx,field,val){
   const d=items[idx];if(!d)return;
   const draft=hyGetDraft(idx,d);
   if(field==='defect_detail'){draft.defect_detail=val;_hyLocalSet(idx);return;} // 서버 저장은 입력칸을 벗어날 때(onblur)
-  const defKey=field==='paint'?'_defPaint':field==='protect'?'_defProtect':field==='roadmark'?'_defRoadmark':null;
+  const defKey=field==='paint'?'_defPaint':field==='protect'?'_defProtect':field==='roadmark'?'_defRoadmark':field==='sign'?'_defSign':null;
   if(defKey&&draft[defKey]){ // 기본값이 골라진 항목을 처음 누름: 같은 값이면 '확인'으로 유지, 다른 값이면 그 값으로
     delete draft[defKey];
     draft[field]=val===''?null:val;
   }else draft[field]=(val===''||draft[field]===val)?null:val; // 목록에서 '선택'으로 되돌리면 비움
   // 값 하나를 고르면 해당 접이식 섹션은 자동으로 접어서 카드를 다시 컴팩트하게 만든다.
-  // (단, 보호틀·노면표시는 항목이 2개라 하나 고르자마자 접으면 나머지를 못 고르니 자동 접힘 제외)
+  // (단, 보호틀·노면표시·표지는 항목이 여러 개라 하나 고르자마자 접으면 나머지를 못 고르니 자동 접힘 제외)
   if(field==='paint'||field==='insul'){
     hyExpanded[`${idx}:${field}`]=false;
   }
@@ -276,6 +279,7 @@ async function hySaveNow(idx,force){ // force: 기본값만 있어도 저장 (�
     insul:draft.hydrant_type==='underground'?draft.insul:null,
     protect:draft.hydrant_type==='ground'?draft.protect:null,
     roadmark:draft.hydrant_type==='ground'?draft.roadmark:null,
+    sign:draft.hydrant_type==='ground'?draft.sign:null, // 소화전표지 (v3.14.11 — DB에 sign 칸 필요)
     result:draft.result||null, // 사용가부를 아직 안 골라도 저장 (v3.14.2)
     defect_detail:(draft.defect_detail||'').trim(),
     insp_name:name,
@@ -285,7 +289,15 @@ async function hySaveNow(idx,force){ // force: 기본값만 있어도 저장 (�
   _saveInFlight[idx]=true;
   const prevRec=hydrantMap[d.id]?{...hydrantMap[d.id]}:null;
   try{
-    const saved=await SupabaseUtil.upsert('hydmap_records',record,'item_id');
+    let saved,signDropped=false;
+    try{saved=await SupabaseUtil.upsert('hydmap_records',record,'item_id');}
+    catch(e){
+      // DB에 sign(소화전표지) 칸을 아직 안 만들었으면: 표지만 빼고 저장 (나머지 점검값은 잃지 않게)
+      if(!/sign/i.test(e?.message||''))throw e;
+      signDropped=true;
+      const {sign,...rest}=record;
+      saved=await SupabaseUtil.upsert('hydmap_records',rest,'item_id');
+    }
     const changes=_hyDiff(prevRec,record);
     if(changes.length)logHistory(d,'점검 입력',{changes},record.inspection_id);
     if(items[idx]!==d)return; // 저장하는 동안 다른 계획을 열었으면 화면은 건드리지 않음
@@ -294,7 +306,8 @@ async function hySaveNow(idx,force){ // force: 기본값만 있어도 저장 (�
     // 단 '양호'만 고르고 등급(A~D)을 안 고른 상태는 서버에 담기지 않으므로 기기 보관분과 draft를 남긴다
     const pending=draft.resultTop==='양호'&&!draft.result;
     if(!_saveQueued[idx]&&!pending){delete hyDraft[idx];_hyLocalDel(d);}
-    showToast('✅ 자동 저장됨','ok');
+    if(signDropped&&!_signColWarned){_signColWarned=true;showToast('소화전표지는 저장되지 않았습니다 — Supabase에 sign 칸을 추가하세요 (나머지는 저장됨)','err');}
+    else showToast('✅ 자동 저장됨','ok');
     hyReRender(idx);
     updateMarkerIcon(idx);
     updateStats();

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/export-original.js — 처음 올린 엑셀과 같은 형식(칸 이름·순서)으로, 고친 내용을 채워 내려받기 */
-AppFiles.reg('js/export-original.js','v3.14.10'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/export-original.js','v3.14.11'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 원본 형식으로 내려받기 ══════════
    "결과 파일출력"은 앱이 정한 칸으로 나오므로, 처음 올린 대장 엑셀과 형식이 다르다.
@@ -13,7 +13,7 @@ AppFiles.reg('js/export-original.js','v3.14.10'); // 파일 버전 표시 (tools
    ⚠ 값과 구조만 옮긴다. 셀 색·테두리·병합·다른 시트는 옮기지 않는다. */
 
 // 덧붙이는 칸 (원본에 같은 이름의 칸이 이미 있으면 그 칸에 덮어쓴다 — 받은 파일을 다시 올렸다가 또 받는 경우)
-const XO_COLS=['폐전','위치수정일','점검_종류','점검_결과','점검_도색','점검_보온','점검_보호틀','점검_노면표시','점검_고장·이상내용','점검_점검자','점검_점검일','점검_완료','점검_완료일','점검_메모','점검_사진수'];
+const XO_COLS=['폐전','위치수정일','점검_종류','점검_결과','점검_도색','점검_보온','점검_보호틀','점검_노면표시','점검_소화전표지','점검_고장·이상내용','점검_점검자','점검_점검일','점검_완료','점검_완료일','점검_메모','점검_사진수'];
 
 // 보관해 둔 원본 엑셀 파일 가져오기 (데이터 재설정과 같이 씀)
 async function fetchOriginalFile(){
@@ -74,7 +74,7 @@ function _xoExtra(d){
     _xoDate(d.loc_fixed_at),
     HY_TYPE_LABEL[rec?.hydrant_type]||'',
     rec?.result||'',
-    yesMidNo[rec?.paint]||'', insul[rec?.insul]||'', protect[rec?.protect]||'', rec?.roadmark||'',
+    yesMidNo[rec?.paint]||'', insul[rec?.insul]||'', protect[rec?.protect]||'', rec?.roadmark||'', rec?.sign||'',
     rec?.defect_detail||'', rec?.insp_name||'', rec?.insp_date||'',
     done?'○':'', _xoDate(done?.done_at),
     memoMap[d.id]||'', (photoMap[d.id]?.length)||0
