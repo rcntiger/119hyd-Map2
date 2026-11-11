@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.13"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.14"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -135,7 +135,45 @@ html.printing-map .old-panel{display:none!important}
 .type-chip b{font-weight:800;margin-left:2px}
 
 /* 로드뷰 미니맵 크기 조절 손잡이 (왼쪽 위 — 미니맵이 오른쪽 아래에 붙어 있어 위·왼쪽으로 늘어남) (js/roadview.js) */
-.rv-cam{position:relative;width:64px;height:64px;pointer-events:none}
+/* 로드뷰 미니맵 카메라 — 카카오 공식 예제 '동동이' (v3.14.14) */
+.rv-cam-box{position:relative;width:0;height:0;pointer-events:none}
+.MapWalker{position:absolute;margin:-26px 0 0 -51px;pointer-events:none}
+.MapWalker .figure{position:absolute;width:25px;left:38px;top:-2px;height:39px;background:url(https://t1.daumcdn.net/localimg/localimages/07/2018/pc/roadview_minimap_wk_2018.png) -298px -114px no-repeat}
+.MapWalker .angleBack{width:102px;height:52px;background:url(https://t1.daumcdn.net/localimg/localimages/07/2018/pc/roadview_minimap_wk_2018.png) -834px -2px no-repeat}
+.MapWalker.m0 .figure{background-position:-298px -114px}
+.MapWalker.m1 .figure{background-position:-335px -114px}
+.MapWalker.m2 .figure{background-position:-372px -114px}
+.MapWalker.m3 .figure{background-position:-409px -114px}
+.MapWalker.m4 .figure{background-position:-446px -114px}
+.MapWalker.m5 .figure{background-position:-483px -114px}
+.MapWalker.m6 .figure{background-position:-520px -114px}
+.MapWalker.m7 .figure{background-position:-557px -114px}
+.MapWalker.m8 .figure{background-position:-2px -114px}
+.MapWalker.m9 .figure{background-position:-39px -114px}
+.MapWalker.m10 .figure{background-position:-76px -114px}
+.MapWalker.m11 .figure{background-position:-113px -114px}
+.MapWalker.m12 .figure{background-position:-150px -114px}
+.MapWalker.m13 .figure{background-position:-187px -114px}
+.MapWalker.m14 .figure{background-position:-224px -114px}
+.MapWalker.m15 .figure{background-position:-261px -114px}
+.MapWalker.m0 .angleBack{background-position:-834px -2px}
+.MapWalker.m1 .angleBack{background-position:-938px -2px}
+.MapWalker.m2 .angleBack{background-position:-1042px -2px}
+.MapWalker.m3 .angleBack{background-position:-1146px -2px}
+.MapWalker.m4 .angleBack{background-position:-1250px -2px}
+.MapWalker.m5 .angleBack{background-position:-1354px -2px}
+.MapWalker.m6 .angleBack{background-position:-1458px -2px}
+.MapWalker.m7 .angleBack{background-position:-1562px -2px}
+.MapWalker.m8 .angleBack{background-position:-2px -2px}
+.MapWalker.m9 .angleBack{background-position:-106px -2px}
+.MapWalker.m10 .angleBack{background-position:-210px -2px}
+.MapWalker.m11 .angleBack{background-position:-314px -2px}
+.MapWalker.m12 .angleBack{background-position:-418px -2px}
+.MapWalker.m13 .angleBack{background-position:-522px -2px}
+.MapWalker.m14 .angleBack{background-position:-626px -2px}
+.MapWalker.m15 .angleBack{background-position:-730px -2px}
+/* 그림을 못 받을 때 대신 쓰는 모양 (v3.14.10) */
+.rv-cam{position:absolute;left:-32px;top:-32px;width:64px;height:64px;pointer-events:none}
 .rv-cam-rot{position:absolute;inset:0;transform-origin:50% 50%;transition:transform .08s linear}
 .rv-cam-dot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-9px 0 0 -9px;border-radius:50%;background:#ef4444;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .rv-mm-grip{position:absolute;top:0;left:0;width:22px;height:22px;z-index:5;cursor:nwse-resize;touch-action:none;

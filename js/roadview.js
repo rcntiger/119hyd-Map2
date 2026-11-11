@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.13'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.14'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -49,22 +49,43 @@ function _rvGoTo(latLng,fromMini){
     else document.getElementById('rvHint').textContent='로드뷰 없음';
   });
 }
-/* ── 미니맵 카메라 표시 (v3.14.10) ──
-   카카오맵처럼 보고 있는 방향을 부채꼴로 보여 준다. 로드뷰 화면을 돌리면(pan) 부채꼴도 같은 각도로 돈다. */
-let _rvCamRot=null;
+/* ── 미니맵 카메라 표시 (v3.14.14: 카카오맵 '동동이' 그림) ──
+   카카오 지도 API 공식 예제(동동이를 이용하여 로드뷰와 지도 연동하기)의 그림·위치 값을 그대로 쓴다.
+   보는 방향(pan)에 따라 22.5°마다 16방향 그림(m0~m15)으로 바꾼다.
+   그림을 못 받으면(카카오 서버 문제 등) 예전 모양(빨간 점 + 부채꼴, v3.14.10)으로 대신 보여 준다. */
+const RV_WK_IMG='https://t1.daumcdn.net/localimg/localimages/07/2018/pc/roadview_minimap_wk_2018.png';
+let _rvCamBox=null,_rvCamRot=null,_rvWalker=null;
 function _rvCamEl(){
-  const el=document.createElement('div');
-  el.className='rv-cam';
-  el.innerHTML='<div class="rv-cam-rot"><svg width="64" height="64" viewBox="0 0 64 64">'
+  const box=document.createElement('div');
+  box.className='rv-cam-box'; // 크기 0인 상자: 이 점이 로드뷰 위치
+  _rvCamBox=box;
+  _rvWalker=document.createElement('div');
+  _rvWalker.className='MapWalker m0';
+  _rvWalker.innerHTML='<div class="angleBack"></div><div class="figure"></div>';
+  box.appendChild(_rvWalker);
+  const img=new Image();
+  img.onerror=_rvCamFallback;
+  img.src=RV_WK_IMG;
+  return box;
+}
+function _rvCamFallback(){
+  if(!_rvCamBox)return;
+  _rvWalker=null;
+  _rvCamBox.innerHTML='<div class="rv-cam"><div class="rv-cam-rot"><svg width="64" height="64" viewBox="0 0 64 64">'
     +'<path d="M32 32 L16 4.3 A32 32 0 0 1 48 4.3 Z" fill="rgba(239,68,68,.35)" stroke="#ef4444" stroke-width="1.5"/>'
-    +'</svg></div><div class="rv-cam-dot"></div>';
-  _rvCamRot=el.firstChild;
-  return el;
+    +'</svg></div><div class="rv-cam-dot"></div></div>';
+  _rvCamRot=_rvCamBox.querySelector('.rv-cam-rot');
+  _rvCamSync();
 }
 function _rvCamSync(){
-  if(!_rvCamRot||!rvInstance?.getViewpoint)return;
+  if(!rvInstance?.getViewpoint)return;
   const vp=rvInstance.getViewpoint();
-  if(vp&&isFinite(vp.pan))_rvCamRot.style.transform=`rotate(${vp.pan}deg)`;
+  if(!vp||!isFinite(vp.pan))return;
+  const pan=((vp.pan%360)+360)%360;
+  if(_rvWalker){
+    const cls='MapWalker m'+(Math.floor(pan/22.5)%16);
+    if(_rvWalker.className!==cls)_rvWalker.className=cls;
+  }else if(_rvCamRot)_rvCamRot.style.transform=`rotate(${pan}deg)`;
 }
 function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
