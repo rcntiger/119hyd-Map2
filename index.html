@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.14.24';
+const APP_VERSION = 'v3.14.25';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -276,7 +276,8 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
       <div class="rv-panel" id="rvPanel">
         <div class="rv-header">
           <span style="font-size:13px;font-weight:600;flex:1">🔭 로드뷰</span>
-          <span style="font-size:11px;color:var(--mt)" id="rvHint"></span>
+          <span class="rv-near" id="rvNear" title="로드뷰 위치에서 가장 가까운 소화전 (100m 안)"></span>
+          <span class="rv-hint" style="font-size:11px;color:var(--mt)" id="rvHint"></span>
           <button onclick="toggleMinimap()" id="btnMinimap" style="padding:4px 9px;background:var(--sur2);color:var(--tx);border:1px solid var(--bd2);border-radius:6px;font-size:11px;cursor:pointer">🗺️ 미니맵</button>
           <button onclick="closeRv()" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-left:8px">← 지도로</button>
         </div>

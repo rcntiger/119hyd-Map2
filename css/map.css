@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.24"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.25"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -108,6 +108,20 @@
 .rv-panel{position:absolute;inset:0;z-index:200;display:none;flex-direction:column}
 .rv-header{background:var(--sur);border-bottom:1px solid var(--bd);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .rv-body{flex:1;position:relative;min-height:0}
+.rv-near{font-size:12px;font-weight:800;color:#f97316;white-space:nowrap}
+.rv-hint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* 휴대폰: 로드뷰는 화면 전체에 고정, 열어 둔 동안 페이지 스크롤 막음, 지도 ＋/－/현위치 숨김 (v3.14.25) */
+html.rv-open,html.rv-open body{overflow:hidden;overscroll-behavior:none}
+@media(max-width:600px){
+  .rv-panel{position:fixed;inset:0;z-index:10000;height:100dvh}
+  .rv-header{padding:8px 10px;gap:6px}
+  .rv-header>span:first-child{flex:0 0 auto!important}
+  .rv-hint{display:none}
+  .rv-near{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  html.rv-open .map-toolbar,html.rv-open .map-toolbar-top,html.rv-open .mob-toggle,
+  html.rv-open .sidebar.map-mode~.map-wrap .map-toolbar,html.rv-open .sidebar.map-mode~.map-wrap .map-toolbar-top{display:none!important}
+  #rvMap{touch-action:none}
+}
 #rvMap{width:100%;height:100%}
 .rv-minimap{position:absolute;bottom:12px;right:12px;width:180px;height:140px;border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,.8);box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:300;display:none}
 

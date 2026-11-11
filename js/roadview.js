@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.24'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.25'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -10,6 +10,9 @@ function toggleRvMode(){
 }
 function openRvAt(latLng){
   document.getElementById('rvPanel').style.display='flex';
+  // 휴대폰: 로드뷰를 끄는 동안 페이지가 밀려 위쪽 메뉴 줄이 사라지던 문제 → 스크롤 막고 맨 위로 (v3.14.25)
+  document.documentElement.classList.add('rv-open');
+  window.scrollTo(0,0);
   document.getElementById('rvHint').textContent=`${latLng.getLat().toFixed(5)}, ${latLng.getLng().toFixed(5)}`;
   const tb=document.getElementById('mapToolbar');if(tb)tb.style.top='56px';
   const tbTop=document.getElementById('mapToolbarTop');if(tbTop)tbTop.style.setProperty('display','none','important');
@@ -144,6 +147,7 @@ function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
   _rvFixEnd();_rvHyMenuClose();
   document.getElementById('rvPanel').style.display='none';setRvMode(false);
+  document.documentElement.classList.remove('rv-open');
   _rvPinSync(); // 로드뷰 속 소화전 핀 비움
   const tb=document.getElementById('mapToolbar');if(tb)tb.style.top='190px';
   syncMapToolbars();
@@ -327,11 +331,11 @@ const RV_PIN_RANGE=100;    // m
 function _rvPinSync(){
   const open=document.getElementById('rvPanel')?.style.display==='flex';
   const pos=open&&rvInstance?.getPosition?.();
-  if(!pos){_rvPinOv.forEach(o=>o.ov.setMap(null));_rvPinOv.clear();return;}
+  if(!pos){_rvPinOv.forEach(o=>o.ov.setMap(null));_rvPinOv.clear();_rvNearText('');return;}
   const lat0=pos.getLat(),lng0=pos.getLng(),kx=111320*Math.cos(lat0*Math.PI/180);
   // 핀은 하나만 (여러 개면 사진에서 헷갈림, v3.14.24): 위치 수정 중이면 그 소화전, 아니면 100m 안 가장 가까운 소화전
   let pick=null;
-  if(_rvFix)pick=_rvFix.d;
+  if(_rvFix){pick=_rvFix.d;_rvNearText(`📍 ${_rvHyShort(pick.name)} 위치 수정 중`);}
   else{
     let best=RV_PIN_RANGE;
     items.forEach(d=>{
@@ -339,6 +343,8 @@ function _rvPinSync(){
       const m=Math.hypot((d.lat-lat0)*110540,(d.lng-lng0)*kx);
       if(m<=best){best=m;pick=d;}
     });
+    // 메뉴 줄 안내: 핀이 안 보일 때 '100m 안에 없어서'인지 구분되게 (v3.14.25)
+    _rvNearText(pick?`📍 ${_rvHyShort(pick.name)} · ${Math.round(best)}m`:'100m 안 소화전 없음',pick?pick.name:'');
   }
   const want=new Set();
   (pick?[pick]:[]).forEach(d=>{
@@ -367,6 +373,11 @@ function _rvPinSync(){
     o.el.title=d.name;
   });
   _rvPinOv.forEach((o,d)=>{if(!want.has(d)){o.ov.setMap(null);_rvPinOv.delete(d);}});
+}
+function _rvNearText(t,title){
+  const el=document.getElementById('rvNear');if(!el)return;
+  if(el.textContent!==t)el.textContent=t;
+  el.title=title||'로드뷰 위치에서 가장 가까운 소화전 (100m 안)';
 }
 function _rvPinMove(d,latLng){
   const o=_rvPinOv.get(d);
