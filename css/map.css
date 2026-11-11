@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.21"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.22"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -155,10 +155,14 @@ html.printing-map .old-panel{display:none!important}
 #rvMinimap.rv-fixing .rv-cam-box{display:none} /* 위치 수정 중에는 동동이 숨김 (v3.14.20) */
 .rv-hy.fixing{cursor:grab;touch-action:none}
 .rv-hy.fixing i{outline:3px solid #f97316;outline-offset:1px}
-.rv-fix-bar{position:absolute;left:4px;right:4px;bottom:4px;z-index:6;display:none;align-items:center;gap:6px;background:rgba(194,65,12,.92);color:#fff;
+.rv-fix-bar{position:absolute;left:4px;right:4px;bottom:4px;z-index:6;display:none;flex-direction:column;gap:4px;background:rgba(194,65,12,.92);color:#fff;
   font-size:11px;font-weight:700;padding:4px 6px;border-radius:6px;line-height:1.3}
-.rv-fix-bar span{flex:1;min-width:0}
-.rv-fix-bar button{border:none;background:rgba(255,255,255,.25);color:#fff;border-radius:4px;width:22px;height:22px;cursor:pointer;flex:0 0 auto}
+.rv-fix-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-fix-bar div{display:flex;gap:4px}
+.rv-fix-bar button{flex:1;border:none;border-radius:4px;padding:5px 4px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.rv-fix-bar .rv-fix-save{background:#fff;color:#c2410c}
+.rv-fix-bar .rv-fix-save:disabled{opacity:.45;cursor:default}
+.rv-fix-bar .rv-fix-cancel{background:rgba(255,255,255,.25);color:#fff}
 /* 미니맵 소화전 (v3.14.16) */
 .rv-hy{position:relative;display:flex;align-items:center;cursor:pointer}
 .rv-hy i{display:block;width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)}
