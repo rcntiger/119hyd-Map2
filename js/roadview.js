@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.18'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.19'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -17,7 +17,7 @@ function openRvAt(latLng){
   if(!rvMinimapInst){
     rvMinimapInst=new kakao.maps.Map(document.getElementById('rvMinimapInner'),{center:latLng,level:3});
     // ③ 로드뷰가 있는 길을 파란 선으로 (카카오맵과 같은 도로선)
-    try{new kakao.maps.RoadviewOverlay().setMap(rvMinimapInst);}catch(e){}
+    try{_rvRoadLine=new kakao.maps.RoadviewOverlay();_rvRoadLine.setMap(rvMinimapInst);}catch(e){}
     // ① 카메라 표시: 가운데 점 + 보고 있는 방향의 부채꼴 시야 (② 로드뷰를 돌리면 같이 회전)
     rvOverlay=new kakao.maps.CustomOverlay({position:latLng,content:_rvCamEl(),xAnchor:.5,yAnchor:.5,zIndex:10});
     rvOverlay.setMap(rvMinimapInst);
@@ -28,7 +28,11 @@ function openRvAt(latLng){
     kakao.maps.event.addListener(rvInstance,'viewpoint_changed',_rvCamSync);
     kakao.maps.event.addListener(rvInstance,'init',_rvCamSync);
     // ④ 미니맵을 누르면 그 근처 로드뷰로 이동 (파란 선 위를 누르면 됨)
-    kakao.maps.event.addListener(rvMinimapInst,'click',e=>_rvGoTo(e.latLng,true));
+    kakao.maps.event.addListener(rvMinimapInst,'click',e=>{
+      if(_rvHyMenuClose())return;               // 메뉴가 열려 있었으면 닫기만
+      if(_rvFix){_rvFixAsk(e.latLng);return;}   // 위치 수정 중: 누른 곳을 새 위치로
+      _rvGoTo(e.latLng,true);
+    });
     kakao.maps.event.addListener(rvMinimapInst,'idle',_rvHySync); // 미니맵을 옮기면 화면 안 소화전 다시 그림
   }else{rvMinimapInst.setCenter(latLng);rvOverlay.setPosition(latLng);}
   // PC에서는 미니맵을 기본으로 켬 (끈 적이 있으면 그 상태를 기억) — 휴대폰은 화면이 작아 꺼진 채 시작 (v3.14.4)
@@ -107,6 +111,7 @@ function _rvDragInit(box){
   };
   box.addEventListener('pointerdown',e=>{
     if(!e.target.closest('.figure,.rv-cam-dot')||!rvMinimapInst)return;
+    if(_rvFix){e.preventDefault();e.stopPropagation();return;} // 위치 수정 중에는 동동이 끌기 막음
     e.preventDefault();e.stopPropagation();
     drag={x:e.clientX,y:e.clientY,moved:false,from:rvOverlay.getPosition()};
     box.classList.add('dragging');
@@ -135,6 +140,7 @@ function _rvDragInit(box){
 }
 function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
+  _rvFixEnd();_rvHyMenuClose();
   document.getElementById('rvPanel').style.display='none';setRvMode(false);
   const tb=document.getElementById('mapToolbar');if(tb)tb.style.top='190px';
   syncMapToolbars();
@@ -145,6 +151,7 @@ function closeRv(){
 }
 function toggleMinimap(auto){
   minimapOn=!minimapOn;
+  if(!minimapOn){_rvFixEnd();_rvHyMenuClose();}
   if(!auto&&window.innerWidth>600)safeStorage.set('hy_rv_minimap',minimapOn?'1':'0'); // PC에서 직접 끄고 켠 것만 기억
   document.getElementById('rvMinimap').style.display=minimapOn?'block':'none';
   const btn=document.getElementById('btnMinimap');
@@ -178,11 +185,21 @@ function _rvHySync(){
       const el=document.createElement('div');
       el.className='rv-hy';
       el.innerHTML='<i></i><span></span>';
-      el.addEventListener('click',e=>{e.stopPropagation();_rvGoTo(new kakao.maps.LatLng(d.lat,d.lng),true);});
+      el.addEventListener('click',e=>{
+        e.stopPropagation();
+        if(_rvFix){if(_rvFix.d===d&&!_rvFix.moved)_rvFixEnd(true);return;} // 수정 중인 마커를 다시 누르면 취소
+        _rvHyMenuOpen(d);
+      });
+      _rvFixDragInit(el,d);
       const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,xAnchor:.5,yAnchor:.5,zIndex:5,clickable:true});
       ov.setMap(rvMinimapInst);
       o={ov,el};_rvHyOv.set(d,o);
     }
+    if(!(_rvFix&&_rvFix.d===d)){ // 위치가 바뀌었으면 따라감 (수정 중인 마커는 손대지 않음)
+      const p=o.ov.getPosition();
+      if(!p||Math.abs(p.getLat()-d.lat)>1e-9||Math.abs(p.getLng()-d.lng)>1e-9)o.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));
+    }
+    o.el.classList.toggle('fixing',!!(_rvFix&&_rvFix.d===d));
     // 색·완료·이름은 매번 맞춤 (로드뷰를 보는 중에 완료 처리한 것도 반영)
     const done=!!doneMap[d.id];
     o.el.classList.toggle('done',done);
@@ -192,6 +209,104 @@ function _rvHySync(){
     o.el.title=d.name;
   });
   _rvHyOv.forEach((o,d)=>{if(!want.has(d)){o.ov.setMap(null);_rvHyOv.delete(d);}});
+}
+/* ── 미니맵에서 소화전 위치 수정 (v3.14.19) ──
+   마커를 누르면 [🔭 로드뷰 이동] [📍 위치 수정] 메뉴. 위치 수정 중에는:
+     · 파란 도로선을 숨기고, 다른 마커는 흐리게(누르면 통과), 동동이 끌기는 막음
+     · 미니맵을 누르거나 마커를 끌어 놓으면 '이 위치로 저장할까요?' → 큰 지도의 위치 수정과 같은 저장(applyFixLocation)
+     · 마커를 다시 누르거나 안내 줄의 ✕로 취소 */
+let _rvRoadLine=null,_rvFix=null,_rvHyMenu=null;
+function _rvHyMenuOpen(d){
+  _rvHyMenuClose();
+  const el=document.createElement('div');
+  el.className='rv-hy-menu';
+  el.innerHTML=`<b></b><div><button data-a="go">🔭 로드뷰 이동</button><button data-a="fix">📍 위치 수정</button></div>`;
+  el.querySelector('b').textContent=d.name;
+  el.addEventListener('click',e=>{
+    e.stopPropagation();
+    const a=e.target.closest('button')?.dataset.a;if(!a)return;
+    _rvHyMenuClose();
+    if(a==='go')_rvGoTo(new kakao.maps.LatLng(d.lat,d.lng),true);
+    else _rvFixStart(d);
+  });
+  ['mousedown','touchstart'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation()));
+  _rvHyMenu=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,xAnchor:.5,yAnchor:1.15,zIndex:20,clickable:true});
+  _rvHyMenu.setMap(rvMinimapInst);
+}
+function _rvHyMenuClose(){if(!_rvHyMenu)return false;_rvHyMenu.setMap(null);_rvHyMenu=null;return true;}
+function _rvFixStart(d){
+  _rvFix={d,moved:false};
+  _rvRoadLine?.setMap(null); // 파란 선 숨김
+  const mm=document.getElementById('rvMinimap');
+  mm.classList.add('rv-fixing');
+  let bar=document.getElementById('rvFixBar');
+  if(!bar){
+    bar=document.createElement('div');bar.id='rvFixBar';bar.className='rv-fix-bar';
+    bar.innerHTML='<span></span><button title="위치 수정 취소">✕</button>';
+    bar.querySelector('button').addEventListener('click',e=>{e.stopPropagation();_rvFixEnd(true);});
+    ['mousedown','touchstart','pointerdown'].forEach(t=>bar.addEventListener(t,e=>e.stopPropagation()));
+    mm.appendChild(bar);
+  }
+  bar.querySelector('span').textContent=`📍 ${d.name}: 실제 위치를 누르거나 마커를 끌어 놓으세요`;
+  bar.style.display='flex';
+  _rvHySync();
+}
+function _rvFixEnd(cancelled){
+  if(!_rvFix)return;
+  const d=_rvFix.d;_rvFix=null;
+  if(rvMinimapInst)_rvRoadLine?.setMap(rvMinimapInst); // 파란 선 다시
+  document.getElementById('rvMinimap')?.classList.remove('rv-fixing');
+  const bar=document.getElementById('rvFixBar');if(bar)bar.style.display='none';
+  if(rvMinimapInst)rvMinimapInst.setDraggable(true);
+  _rvHySync(); // 마커를 원래(또는 저장된) 자리로
+  if(cancelled)showToast('위치 수정 취소됨','');
+}
+// 새 위치 확인 → 저장. 취소하면 마커만 제자리로 돌리고 수정 모드는 계속
+async function _rvFixAsk(latLng){
+  if(!_rvFix)return;
+  const d=_rvFix.d,o=_rvHyOv.get(d);
+  o?.ov.setPosition(latLng);
+  if(!confirm(`📍 ${d.name}\n이 위치로 저장할까요?`)){
+    o?.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));
+    _rvFix.moved=false;
+    return;
+  }
+  const idx=items.indexOf(d);
+  _rvFixEnd();
+  if(idx<0)return;
+  _fixMeta={method:'미니맵(로드뷰)'}; // 이력에 남는 방법 (gps.js)
+  await applyFixLocation(idx,latLng);
+  _rvHySync();
+}
+// 수정 중인 마커 끌기
+function _rvFixDragInit(el,d){
+  let drag=null;
+  el.addEventListener('pointerdown',e=>{
+    if(!_rvFix||_rvFix.d!==d||!rvMinimapInst)return;
+    e.preventDefault();e.stopPropagation();
+    drag={x:e.clientX,y:e.clientY};_rvFix.moved=false;
+    rvMinimapInst.setDraggable(false);
+    try{el.setPointerCapture(e.pointerId);}catch{}
+  });
+  ['mousedown','touchstart'].forEach(t=>el.addEventListener(t,e=>{if(_rvFix&&_rvFix.d===d)e.stopPropagation();}));
+  const toLatLng=e=>{
+    const r=document.getElementById('rvMinimapInner').getBoundingClientRect();
+    return rvMinimapInst.getProjection().coordsFromContainerPoint(new kakao.maps.Point(e.clientX-r.left,e.clientY-r.top));
+  };
+  el.addEventListener('pointermove',e=>{
+    if(!drag||!_rvFix)return;
+    e.preventDefault();
+    if(!_rvFix.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
+    _rvFix.moved=true;
+    _rvHyOv.get(d)?.ov.setPosition(toLatLng(e));
+  });
+  const end=e=>{
+    if(!drag)return;drag=null;
+    rvMinimapInst?.setDraggable(true);
+    if(_rvFix&&_rvFix.moved){const ll=toLatLng(e);setTimeout(()=>_rvFixAsk(ll),0);} // 끌어 놓았으면 확인 (뒤따르는 click은 무시됨: moved)
+  };
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',()=>{if(!drag)return;drag=null;rvMinimapInst?.setDraggable(true);_rvHyOv.get(d)?.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));});
 }
 /* ── 미니맵 크기 조절 (v3.14.4) ──
    왼쪽 위 손잡이를 끌면 위·왼쪽으로 커지고 작아진다. 최소 140×110, 최대 로드뷰 화면의 70%. 크기는 이 기기에 기억. */

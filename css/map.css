@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.18"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.19"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -136,6 +136,21 @@ html.printing-map .old-panel{display:none!important}
 
 /* 로드뷰 미니맵 크기 조절 손잡이 (왼쪽 위 — 미니맵이 오른쪽 아래에 붙어 있어 위·왼쪽으로 늘어남) (js/roadview.js) */
 /* 로드뷰 미니맵 카메라 — 카카오 공식 예제 '동동이' (v3.14.14) */
+/* 미니맵 위치 수정 (v3.14.19) */
+.rv-hy-menu{background:#fff;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.35);padding:6px;display:flex;flex-direction:column;gap:5px;font-size:12px;color:#1e293b;white-space:nowrap}
+.rv-hy-menu b{font-size:12px;padding:0 2px}
+.rv-hy-menu div{display:flex;gap:5px}
+.rv-hy-menu button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:6px;padding:5px 7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:#1e293b}
+.rv-hy-menu button[data-a="fix"]{border-color:#f97316;color:#c2410c;background:#fff7ed}
+#rvMinimap.rv-fixing .rv-hy:not(.fixing){opacity:.3;pointer-events:none}
+#rvMinimap.rv-fixing div:has(> .rv-hy:not(.fixing)){pointer-events:none} /* 카카오 오버레이 감싸개도 통과시켜 그 자리를 눌러도 위치 지정 */
+#rvMinimap.rv-fixing .rv-cam-box{opacity:.4}
+.rv-hy.fixing{cursor:grab;touch-action:none}
+.rv-hy.fixing i{outline:3px solid #f97316;outline-offset:1px}
+.rv-fix-bar{position:absolute;left:4px;right:4px;bottom:4px;z-index:6;display:none;align-items:center;gap:6px;background:rgba(194,65,12,.92);color:#fff;
+  font-size:11px;font-weight:700;padding:4px 6px;border-radius:6px;line-height:1.3}
+.rv-fix-bar span{flex:1;min-width:0}
+.rv-fix-bar button{border:none;background:rgba(255,255,255,.25);color:#fff;border-radius:4px;width:22px;height:22px;cursor:pointer;flex:0 0 auto}
 /* 미니맵 소화전 (v3.14.16) */
 .rv-hy{position:relative;display:flex;align-items:center;cursor:pointer}
 .rv-hy i{display:block;width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)}
