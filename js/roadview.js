@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.15'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.16'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -29,6 +29,7 @@ function openRvAt(latLng){
     kakao.maps.event.addListener(rvInstance,'init',_rvCamSync);
     // ④ 미니맵을 누르면 그 근처 로드뷰로 이동 (파란 선 위를 누르면 됨)
     kakao.maps.event.addListener(rvMinimapInst,'click',e=>_rvGoTo(e.latLng,true));
+    kakao.maps.event.addListener(rvMinimapInst,'idle',_rvHySync); // 미니맵을 옮기면 화면 안 소화전 다시 그림
   }else{rvMinimapInst.setCenter(latLng);rvOverlay.setPosition(latLng);}
   // PC에서는 미니맵을 기본으로 켬 (끈 적이 있으면 그 상태를 기억) — 휴대폰은 화면이 작아 꺼진 채 시작 (v3.14.4)
   _rvMmGripInit();
@@ -36,6 +37,7 @@ function openRvAt(latLng){
   const want=window.innerWidth>600&&safeStorage.get('hy_rv_minimap','1')!=='0';
   if(want!==minimapOn)toggleMinimap(true);
   else if(minimapOn)setTimeout(()=>{rvMinimapInst.relayout();rvMinimapInst.setCenter(rvOverlay.getPosition());},50);
+  setTimeout(_rvHySync,80);
   _rvGoTo(latLng,false);
 }
 // 그 위치에서 가장 가까운 로드뷰(50m 안)로 이동. fromMini: 미니맵을 눌러 옮긴 경우
@@ -137,6 +139,7 @@ function closeRv(){
   const tb=document.getElementById('mapToolbar');if(tb)tb.style.top='190px';
   syncMapToolbars();
   minimapOn=false;document.getElementById('rvMinimap').style.display='none'; // 다음에 열 때 다시 기본값(PC 켬)으로
+  _rvHySync(); // 미니맵 소화전 표시 비움 (다음에 열 때 최신 상태로 다시 그림)
   const btn=document.getElementById('btnMinimap');if(btn){btn.style.background='';btn.style.color='';}
   if(lastIw&&kakaoMap){lastIw.setMap(kakaoMap);iwOpen=lastIw;lastIw=null;}
 }
@@ -146,7 +149,44 @@ function toggleMinimap(auto){
   document.getElementById('rvMinimap').style.display=minimapOn?'block':'none';
   const btn=document.getElementById('btnMinimap');
   if(btn){btn.style.background=minimapOn?'var(--ac)':'';btn.style.color=minimapOn?'#fff':'';}
-  if(minimapOn&&rvMinimapInst)setTimeout(()=>{rvMinimapInst.relayout();if(rvOverlay)rvMinimapInst.setCenter(rvOverlay.getPosition());},50);
+  if(minimapOn&&rvMinimapInst)setTimeout(()=>{rvMinimapInst.relayout();if(rvOverlay)rvMinimapInst.setCenter(rvOverlay.getPosition());_rvHySync();},50);
+  else _rvHySync(); // 끄면 소화전 표시도 비움
+}
+/* ── 미니맵 소화전 표시 (v3.14.16) ──
+   큰 지도에 보이는 소화전(조·식구분·노후 등 필터 그대로)만, 미니맵 화면 안에 있는 것만 작은 동그라미로 그린다.
+   색은 큰 지도와 같음(조 색 / 완료 녹색 ✓). 누르면 그 소화전 근처 로드뷰로 이동. */
+const _rvHyOv=new Map(); // 소화전 → {ov, el}
+function _rvHyShort(name){const s=String(name||'');const m=s.match(/[-_\s]([^-_\s]+)$/);return m?m[1]:s;}
+function _rvHySync(){
+  if(!rvMinimapInst)return;
+  const panelOpen=document.getElementById('rvPanel')?.style.display==='flex';
+  if(!minimapOn||!panelOpen){_rvHyOv.forEach(o=>o.ov.setMap(null));_rvHyOv.clear();return;}
+  const bd=rvMinimapInst.getBounds(),sw=bd.getSouthWest(),ne=bd.getNorthEast();
+  const pl=(ne.getLat()-sw.getLat())*.2,pg=(ne.getLng()-sw.getLng())*.2;
+  const want=new Set();
+  items.forEach(d=>{
+    if(!d.lat||!d.lng||isHidden(d))return;
+    if(d.lat<sw.getLat()-pl||d.lat>ne.getLat()+pl||d.lng<sw.getLng()-pg||d.lng>ne.getLng()+pg)return;
+    want.add(d);
+    let o=_rvHyOv.get(d);
+    if(!o){
+      const el=document.createElement('div');
+      el.className='rv-hy';
+      el.innerHTML='<i></i><span></span>';
+      el.addEventListener('click',e=>{e.stopPropagation();_rvGoTo(new kakao.maps.LatLng(d.lat,d.lng),true);});
+      const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,xAnchor:.5,yAnchor:.5,zIndex:5,clickable:true});
+      ov.setMap(rvMinimapInst);
+      o={ov,el};_rvHyOv.set(d,o);
+    }
+    // 색·완료·이름은 매번 맞춤 (로드뷰를 보는 중에 완료 처리한 것도 반영)
+    const done=!!doneMap[d.id];
+    o.el.classList.toggle('done',done);
+    o.el.firstChild.style.background=done?'':groupColor(d);
+    const t=_rvHyShort(d.name);
+    if(o.el.lastChild.textContent!==t)o.el.lastChild.textContent=t;
+    o.el.title=d.name;
+  });
+  _rvHyOv.forEach((o,d)=>{if(!want.has(d)){o.ov.setMap(null);_rvHyOv.delete(d);}});
 }
 /* ── 미니맵 크기 조절 (v3.14.4) ──
    왼쪽 위 손잡이를 끌면 위·왼쪽으로 커지고 작아진다. 최소 140×110, 최대 로드뷰 화면의 70%. 크기는 이 기기에 기억. */

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.15"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.16"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -136,6 +136,13 @@ html.printing-map .old-panel{display:none!important}
 
 /* 로드뷰 미니맵 크기 조절 손잡이 (왼쪽 위 — 미니맵이 오른쪽 아래에 붙어 있어 위·왼쪽으로 늘어남) (js/roadview.js) */
 /* 로드뷰 미니맵 카메라 — 카카오 공식 예제 '동동이' (v3.14.14) */
+/* 미니맵 소화전 (v3.14.16) */
+.rv-hy{position:relative;display:flex;align-items:center;cursor:pointer}
+.rv-hy i{display:block;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.rv-hy.done i{background:#22c55e!important;width:12px;height:12px;display:flex;align-items:center;justify-content:center}
+.rv-hy.done i::before{content:'✓';color:#fff;font:900 8px/1 sans-serif;font-style:normal}
+.rv-hy span{position:absolute;left:14px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:10px;font-weight:700;color:#1e293b;
+  background:rgba(255,255,255,.85);padding:0 3px;border-radius:3px;pointer-events:none}
 .rv-cam-box{position:relative;width:0;height:0;pointer-events:none}
 /* 동동이 끌기: 사람 그림(예비 모양은 빨간 점)만 잡을 수 있게 (v3.14.15) */
 .rv-cam-box .MapWalker .figure,.rv-cam-box .rv-cam-dot{pointer-events:auto;cursor:grab;touch-action:none}
