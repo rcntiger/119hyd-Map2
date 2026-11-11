@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.19"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.20"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -144,7 +144,7 @@ html.printing-map .old-panel{display:none!important}
 .rv-hy-menu button[data-a="fix"]{border-color:#f97316;color:#c2410c;background:#fff7ed}
 #rvMinimap.rv-fixing .rv-hy:not(.fixing){opacity:.3;pointer-events:none}
 #rvMinimap.rv-fixing div:has(> .rv-hy:not(.fixing)){pointer-events:none} /* 카카오 오버레이 감싸개도 통과시켜 그 자리를 눌러도 위치 지정 */
-#rvMinimap.rv-fixing .rv-cam-box{opacity:.4}
+#rvMinimap.rv-fixing .rv-cam-box{display:none} /* 위치 수정 중에는 동동이 숨김 (v3.14.20) */
 .rv-hy.fixing{cursor:grab;touch-action:none}
 .rv-hy.fixing i{outline:3px solid #f97316;outline-offset:1px}
 .rv-fix-bar{position:absolute;left:4px;right:4px;bottom:4px;z-index:6;display:none;align-items:center;gap:6px;background:rgba(194,65,12,.92);color:#fff;
