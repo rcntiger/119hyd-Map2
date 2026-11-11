@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.14'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.15'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -39,13 +39,16 @@ function openRvAt(latLng){
   _rvGoTo(latLng,false);
 }
 // 그 위치에서 가장 가까운 로드뷰(50m 안)로 이동. fromMini: 미니맵을 눌러 옮긴 경우
-function _rvGoTo(latLng,fromMini){
+function _rvGoTo(latLng,fromMini,onFail){
   const client=new kakao.maps.RoadviewClient();
   client.getNearestPanoId(latLng,50,panoId=>{
     if(panoId){
       rvInstance.setPanoId(panoId,latLng);
       if(fromMini)document.getElementById('rvHint').textContent=`${latLng.getLat().toFixed(5)}, ${latLng.getLng().toFixed(5)}`;
-    }else if(fromMini)showToast('이 근처에는 로드뷰가 없습니다. 파란 선 위를 눌러 주세요','');
+    }else if(fromMini){
+      if(onFail)onFail();
+      showToast('이 근처에는 로드뷰가 없습니다. 파란 선 위에 놓아 주세요','');
+    }
     else document.getElementById('rvHint').textContent='로드뷰 없음';
   });
 }
@@ -63,6 +66,7 @@ function _rvCamEl(){
   _rvWalker.className='MapWalker m0';
   _rvWalker.innerHTML='<div class="angleBack"></div><div class="figure"></div>';
   box.appendChild(_rvWalker);
+  _rvDragInit(box);
   const img=new Image();
   img.onerror=_rvCamFallback;
   img.src=RV_WK_IMG;
@@ -86,6 +90,46 @@ function _rvCamSync(){
     const cls='MapWalker m'+(Math.floor(pan/22.5)%16);
     if(_rvWalker.className!==cls)_rvWalker.className=cls;
   }else if(_rvCamRot)_rvCamRot.style.transform=`rotate(${pan}deg)`;
+}
+/* ── 동동이 끌어서 옮기기 (v3.14.15) ──
+   사람 그림(빨간 점 모양일 땐 점)을 잡고 끌면 따라오고, 놓은 곳 50m 안의 로드뷰로 이동한다.
+   로드뷰가 없으면 원래 자리로 돌아간다. 끄는 동안 미니맵 지도는 움직이지 않게 막는다. */
+function _rvDragInit(box){
+  let drag=null;
+  const stop=e=>{if(e.target.closest?.('.figure,.rv-cam-dot'))e.stopPropagation();};
+  // 카카오 지도는 mousedown·touchstart로 지도 끌기를 시작하므로 그 전에 막는다
+  ['mousedown','touchstart','click','dblclick'].forEach(t=>box.addEventListener(t,stop));
+  const toLatLng=e=>{
+    const r=document.getElementById('rvMinimapInner').getBoundingClientRect();
+    return rvMinimapInst.getProjection().coordsFromContainerPoint(new kakao.maps.Point(e.clientX-r.left,e.clientY-r.top));
+  };
+  box.addEventListener('pointerdown',e=>{
+    if(!e.target.closest('.figure,.rv-cam-dot')||!rvMinimapInst)return;
+    e.preventDefault();e.stopPropagation();
+    drag={x:e.clientX,y:e.clientY,moved:false,from:rvOverlay.getPosition()};
+    box.classList.add('dragging');
+    rvMinimapInst.setDraggable(false);
+    try{e.target.setPointerCapture(e.pointerId);}catch{}
+  });
+  box.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    e.preventDefault();
+    if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
+    drag.moved=true;
+    rvOverlay.setPosition(toLatLng(e));
+  });
+  const end=e=>{
+    if(!drag)return;
+    const d=drag;drag=null;
+    box.classList.remove('dragging');
+    rvMinimapInst.setDraggable(true);
+    if(!d.moved)return;
+    const ll=toLatLng(e);
+    rvOverlay.setPosition(ll);
+    _rvGoTo(ll,true,()=>{rvOverlay.setPosition(d.from);});
+  };
+  box.addEventListener('pointerup',end);
+  box.addEventListener('pointercancel',e=>{if(!drag)return;const d=drag;drag=null;box.classList.remove('dragging');rvMinimapInst.setDraggable(true);rvOverlay.setPosition(d.from);});
 }
 function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
