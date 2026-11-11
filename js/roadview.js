@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.22'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.23'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -342,6 +342,7 @@ function _rvPinSync(){
       el.innerHTML='<b></b>';
       const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,xAnchor:.5,yAnchor:1,zIndex:3});
       try{ov.setRange?.(RV_PIN_RANGE+50);}catch(e){}
+      _rvPinDragInit(el,d); // 위치 수정 중이면 로드뷰 속에서 끌어 옮기기 (v3.14.23)
       ov.setMap(rvInstance);
       o={ov,el};_rvPinOv.set(d,o);
     }else if(!fixing){
@@ -362,6 +363,109 @@ function _rvPinMove(d,latLng){
   const o=_rvPinOv.get(d);
   if(o)o.ov.setPosition(latLng);
   else _rvPinSync();
+}
+/* ── 로드뷰 사진 속 핀 끌어 옮기기 (v3.14.23) ──
+   카카오는 '사진 속 이 점의 좌표'를 알려 주지 않는다. 대신 좌표 → 사진 속 위치는 카카오가 그려 준다.
+   그래서 끌기를 시작할 때 보이지 않는 기준점 4개를 바닥 좌표(카메라 앞 몇 m)에 올려 사진 속 위치를 읽고,
+   '화면 점 → 바닥 좌표' 변환(평면 호모그래피)을 구한다. 땅이 평평하다고 보는 계산이라 경사진 곳은 오차가 있다.
+   끄는 동안 로드뷰 화면은 돌지 않게 막는다. 옮긴 자리는 미니맵과 같이 _rvFixSet → ✅ 저장으로 저장. */
+const _rvM_LAT=110540;
+function _rvMLng(lat){return 111320*Math.cos(lat*Math.PI/180);}
+// 8×8 연립방정식 (가우스 소거)
+function _rvSolve(A,b){
+  const n=b.length,M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){
+    let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;
+    if(Math.abs(M[p][c])<1e-12)return null;
+    [M[c],M[p]]=[M[p],M[c]];
+    for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k];}
+  }
+  return M.map((r,i)=>r[n]/r[i]);
+}
+// 대응점 4개(화면 x,y → 바닥 e,n)로 호모그래피 H 구하기
+function _rvHomography(src,dst){
+  const A=[],b=[];
+  for(let i=0;i<4;i++){
+    const [x,y]=src[i],[u,v]=dst[i];
+    A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);
+    A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v);
+  }
+  const h=_rvSolve(A,b);return h?[...h,1]:null;
+}
+// 기준점 4개를 올리고 사진 속 위치를 읽어 변환을 만든다 (그려질 때까지 두 프레임 기다림)
+function _rvPinCalib(){
+  return new Promise(resolve=>{
+    const c=rvInstance?.getPosition?.(),vp=rvInstance?.getViewpoint?.();
+    if(!c||!vp)return resolve(null);
+    const lat0=c.getLat(),lng0=c.getLng(),mlng=_rvMLng(lat0),th=(vp.pan||0)*Math.PI/180;
+    const sets=[[[5,-2.5],[5,2.5],[12,-5],[12,5]],[[3,-1.5],[3,1.5],[7,-3],[7,3]],[[10,-5],[10,5],[25,-10],[25,10]]];
+    let k=0;
+    const tryOne=()=>{
+      if(k>=sets.length)return resolve(null);
+      const pts=sets[k++].map(([f,r])=>{
+        const e=f*Math.sin(th)+r*Math.cos(th),n=f*Math.cos(th)-r*Math.sin(th);
+        const el=document.createElement('div');el.className='rv-probe';
+        const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(lat0+n/_rvM_LAT,lng0+e/mlng),content:el,xAnchor:.5,yAnchor:1,zIndex:1});
+        ov.setMap(rvInstance);
+        return {e,n,el,ov};
+      });
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        const src=[],dst=[];let ok=true;
+        pts.forEach(p=>{
+          const r=p.el.getBoundingClientRect();
+          if(!r.width&&!r.height&&!r.left&&!r.top)ok=false; // 그려지지 않음(화면 밖 등)
+          src.push([r.left+r.width/2,r.bottom]);dst.push([p.e,p.n]);
+          p.ov.setMap(null);
+        });
+        const H=ok?_rvHomography(src,dst):null;
+        if(!H)return tryOne();
+        resolve({H,lat0,lng0,mlng,fwd:[Math.sin(th),Math.cos(th)]});
+      }));
+    };
+    tryOne();
+  });
+}
+// 화면 점 → 좌표 (하늘·카메라 뒤·너무 먼 곳이면 null)
+function _rvScreenToLatLng(cal,x,y){
+  const H=cal.H,w=H[6]*x+H[7]*y+1;
+  if(Math.abs(w)<1e-9)return null;
+  const e=(H[0]*x+H[1]*y+H[2])/w,n=(H[3]*x+H[4]*y+H[5])/w;
+  const ahead=e*cal.fwd[0]+n*cal.fwd[1];
+  if(!(ahead>0.5)||Math.hypot(e,n)>60)return null;
+  return new kakao.maps.LatLng(cal.lat0+n/_rvM_LAT,cal.lng0+e/cal.mlng);
+}
+function _rvPinDragInit(el,d){
+  let drag=null;
+  const mine=()=>_rvFix&&_rvFix.d===d;
+  // 로드뷰가 끌기로 화면을 돌리지 않게 (위치 수정 중인 핀만)
+  ['mousedown','touchstart','touchmove','click','dblclick','wheel'].forEach(t=>el.addEventListener(t,e=>{if(mine())e.stopPropagation();},{passive:true}));
+  el.addEventListener('pointerdown',async e=>{
+    if(!mine())return;
+    e.preventDefault();e.stopPropagation();
+    try{el.setPointerCapture(e.pointerId);}catch{}
+    const r=el.getBoundingClientRect();
+    drag={dx:e.clientX-(r.left+r.width/2),dy:e.clientY-r.bottom,cal:null,last:null};
+    el.classList.add('dragging');
+    const cal=await _rvPinCalib();
+    if(!drag)return;
+    if(!cal){drag=null;el.classList.remove('dragging');showToast('이 화면 각도에서는 계산이 어렵습니다 — 로드뷰를 조금 아래로 내려 보거나 미니맵에서 맞춰 주세요','');return;}
+    drag.cal=cal;
+    if(drag.last)_rvPinDragTo(drag,d);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    e.preventDefault();e.stopPropagation();
+    drag.last=[e.clientX,e.clientY];
+    if(drag.cal)_rvPinDragTo(drag,d);
+  });
+  const end=e=>{if(!drag)return;e.stopPropagation();drag=null;el.classList.remove('dragging');};
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+}
+function _rvPinDragTo(drag,d){
+  const [x,y]=drag.last;
+  const ll=_rvScreenToLatLng(drag.cal,x-drag.dx,y-drag.dy);
+  if(ll&&_rvFix&&_rvFix.d===d)_rvFixSet(ll);
 }
 /* ── 미니맵 크기 조절 (v3.14.4) ──
    왼쪽 위 손잡이를 끌면 위·왼쪽으로 커지고 작아진다. 최소 140×110, 최대 로드뷰 화면의 70%. 크기는 이 기기에 기억. */

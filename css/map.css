@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.22"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.23"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -144,6 +144,11 @@ html.printing-map .old-panel{display:none!important}
 .rv-pin.done b{background:#22c55e!important}
 .rv-pin.done b::before{content:'\2713  '}
 .rv-pin.fixing b{outline:3px solid #f97316}
+/* 위치 수정 중인 핀은 로드뷰 속에서 잡아 끌 수 있음 (v3.14.23) */
+.rv-pin.fixing,.rv-pin.fixing b{pointer-events:auto;cursor:grab;touch-action:none}
+.rv-pin.fixing.dragging,.rv-pin.fixing.dragging b{cursor:grabbing}
+.rv-pin.fixing::after{background:#f97316}
+.rv-probe{width:2px;height:2px;visibility:hidden;pointer-events:none}
 /* 미니맵 위치 수정 (v3.14.19) */
 .rv-hy-menu{background:#fff;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.35);padding:6px;display:flex;flex-direction:column;gap:5px;font-size:12px;color:#1e293b;white-space:nowrap}
 .rv-hy-menu b{font-size:12px;padding:0 2px}
