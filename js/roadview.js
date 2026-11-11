@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.23'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.24'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -321,7 +321,7 @@ function _rvFixDragInit(el,d){
 }
 /* ── 로드뷰 사진 속 소화전 핀 (v3.14.21) ──
    카카오 API는 로드뷰에도 좌표대로 오버레이를 올릴 수 있다. 좌표가 맞으면 핀이 사진 속 실제 소화전 위에 선다.
-   로드뷰 위치에서 100m 안, 큰 지도에 보이는 소화전만. 미니맵 위치 수정 중에는 끄는 대로 핀이 따라 움직인다. */
+   로드뷰 위치에서 100m 안 가장 가까운 소화전 하나만 (큰 지도에 보이는 것 중). 미니맵 위치 수정 중에는 끄는 대로 핀이 따라 움직인다. */
 const _rvPinOv=new Map(); // 소화전 → {ov, el}
 const RV_PIN_RANGE=100;    // m
 function _rvPinSync(){
@@ -329,11 +329,20 @@ function _rvPinSync(){
   const pos=open&&rvInstance?.getPosition?.();
   if(!pos){_rvPinOv.forEach(o=>o.ov.setMap(null));_rvPinOv.clear();return;}
   const lat0=pos.getLat(),lng0=pos.getLng(),kx=111320*Math.cos(lat0*Math.PI/180);
+  // 핀은 하나만 (여러 개면 사진에서 헷갈림, v3.14.24): 위치 수정 중이면 그 소화전, 아니면 100m 안 가장 가까운 소화전
+  let pick=null;
+  if(_rvFix)pick=_rvFix.d;
+  else{
+    let best=RV_PIN_RANGE;
+    items.forEach(d=>{
+      if(!d.lat||!d.lng||isHidden(d))return;
+      const m=Math.hypot((d.lat-lat0)*110540,(d.lng-lng0)*kx);
+      if(m<=best){best=m;pick=d;}
+    });
+  }
   const want=new Set();
-  items.forEach(d=>{
-    if(!d.lat||!d.lng||isHidden(d))return;
-    const fixing=_rvFix&&_rvFix.d===d;
-    if(!fixing&&Math.hypot((d.lat-lat0)*110540,(d.lng-lng0)*kx)>RV_PIN_RANGE)return;
+  (pick?[pick]:[]).forEach(d=>{
+    const fixing=!!_rvFix;
     want.add(d);
     let o=_rvPinOv.get(d);
     if(!o){
