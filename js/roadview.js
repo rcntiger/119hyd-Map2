@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.20'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.21'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -24,7 +24,9 @@ function openRvAt(latLng){
     kakao.maps.event.addListener(rvInstance,'position_changed',()=>{
       const pos=rvInstance.getPosition();
       if(pos&&rvMinimapInst){rvMinimapInst.setCenter(pos);rvOverlay.setPosition(pos);}
+      _rvPinSync();
     });
+    kakao.maps.event.addListener(rvInstance,'init',_rvPinSync); // 로드뷰 사진이 준비된 뒤 핀 올리기
     kakao.maps.event.addListener(rvInstance,'viewpoint_changed',_rvCamSync);
     kakao.maps.event.addListener(rvInstance,'init',_rvCamSync);
     // ④ 미니맵을 누르면 그 근처 로드뷰로 이동 (파란 선 위를 누르면 됨)
@@ -142,6 +144,7 @@ function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
   _rvFixEnd();_rvHyMenuClose();
   document.getElementById('rvPanel').style.display='none';setRvMode(false);
+  _rvPinSync(); // 로드뷰 속 소화전 핀 비움
   const tb=document.getElementById('mapToolbar');if(tb)tb.style.top='190px';
   syncMapToolbars();
   minimapOn=false;document.getElementById('rvMinimap').style.display='none'; // 다음에 열 때 다시 기본값(PC 켬)으로
@@ -172,7 +175,7 @@ function _rvHyShort(name){
 function _rvHySync(){
   if(!rvMinimapInst)return;
   const panelOpen=document.getElementById('rvPanel')?.style.display==='flex';
-  if(!minimapOn||!panelOpen){_rvHyOv.forEach(o=>o.ov.setMap(null));_rvHyOv.clear();return;}
+  if(!minimapOn||!panelOpen){_rvHyOv.forEach(o=>o.ov.setMap(null));_rvHyOv.clear();_rvPinSync();return;}
   const bd=rvMinimapInst.getBounds(),sw=bd.getSouthWest(),ne=bd.getNorthEast();
   const pl=(ne.getLat()-sw.getLat())*.2,pg=(ne.getLng()-sw.getLng())*.2;
   const want=new Set();
@@ -209,6 +212,7 @@ function _rvHySync(){
     o.el.title=d.name;
   });
   _rvHyOv.forEach((o,d)=>{if(!want.has(d)){o.ov.setMap(null);_rvHyOv.delete(d);}});
+  _rvPinSync();
 }
 /* ── 미니맵에서 소화전 위치 수정 (v3.14.19) ──
    마커를 누르면 [🔭 로드뷰 이동] [📍 위치 수정] 메뉴. 위치 수정 중에는:
@@ -266,8 +270,11 @@ async function _rvFixAsk(latLng){
   if(!_rvFix)return;
   const d=_rvFix.d,o=_rvHyOv.get(d);
   o?.ov.setPosition(latLng);
+  _rvPinMove(d,latLng);
+  await new Promise(r=>setTimeout(r,60)); // 확인 창 전에 로드뷰 속 핀이 새 자리로 그려지게
   if(!confirm(`📍 ${d.name}\n이 위치로 저장할까요?`)){
     o?.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));
+    _rvPinMove(d,new kakao.maps.LatLng(d.lat,d.lng));
     _rvFix.moved=false;
     return;
   }
@@ -298,7 +305,9 @@ function _rvFixDragInit(el,d){
     e.preventDefault();
     if(!_rvFix.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
     _rvFix.moved=true;
-    _rvHyOv.get(d)?.ov.setPosition(toLatLng(e));
+    const ll=toLatLng(e);
+    _rvHyOv.get(d)?.ov.setPosition(ll);
+    _rvPinMove(d,ll); // 로드뷰 속 핀도 같이 움직임 → 사진 속 실제 소화전에 닿게 맞추기
   });
   const end=e=>{
     if(!drag)return;drag=null;
@@ -306,7 +315,51 @@ function _rvFixDragInit(el,d){
     if(_rvFix&&_rvFix.moved){const ll=toLatLng(e);setTimeout(()=>_rvFixAsk(ll),0);} // 끌어 놓았으면 확인 (뒤따르는 click은 무시됨: moved)
   };
   el.addEventListener('pointerup',end);
-  el.addEventListener('pointercancel',()=>{if(!drag)return;drag=null;rvMinimapInst?.setDraggable(true);_rvHyOv.get(d)?.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));});
+  el.addEventListener('pointercancel',()=>{if(!drag)return;drag=null;rvMinimapInst?.setDraggable(true);const p=new kakao.maps.LatLng(d.lat,d.lng);_rvHyOv.get(d)?.ov.setPosition(p);_rvPinMove(d,p);});
+}
+/* ── 로드뷰 사진 속 소화전 핀 (v3.14.21) ──
+   카카오 API는 로드뷰에도 좌표대로 오버레이를 올릴 수 있다. 좌표가 맞으면 핀이 사진 속 실제 소화전 위에 선다.
+   로드뷰 위치에서 100m 안, 큰 지도에 보이는 소화전만. 미니맵 위치 수정 중에는 끄는 대로 핀이 따라 움직인다. */
+const _rvPinOv=new Map(); // 소화전 → {ov, el}
+const RV_PIN_RANGE=100;    // m
+function _rvPinSync(){
+  const open=document.getElementById('rvPanel')?.style.display==='flex';
+  const pos=open&&rvInstance?.getPosition?.();
+  if(!pos){_rvPinOv.forEach(o=>o.ov.setMap(null));_rvPinOv.clear();return;}
+  const lat0=pos.getLat(),lng0=pos.getLng(),kx=111320*Math.cos(lat0*Math.PI/180);
+  const want=new Set();
+  items.forEach(d=>{
+    if(!d.lat||!d.lng||isHidden(d))return;
+    const fixing=_rvFix&&_rvFix.d===d;
+    if(!fixing&&Math.hypot((d.lat-lat0)*110540,(d.lng-lng0)*kx)>RV_PIN_RANGE)return;
+    want.add(d);
+    let o=_rvPinOv.get(d);
+    if(!o){
+      const el=document.createElement('div');
+      el.className='rv-pin';
+      el.innerHTML='<b></b>';
+      const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,xAnchor:.5,yAnchor:1,zIndex:3});
+      try{ov.setRange?.(RV_PIN_RANGE+50);}catch(e){}
+      ov.setMap(rvInstance);
+      o={ov,el};_rvPinOv.set(d,o);
+    }else if(!fixing){
+      const p=o.ov.getPosition();
+      if(!p||Math.abs(p.getLat()-d.lat)>1e-9||Math.abs(p.getLng()-d.lng)>1e-9)o.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));
+    }
+    const done=!!doneMap[d.id];
+    o.el.classList.toggle('done',done);
+    o.el.classList.toggle('fixing',fixing);
+    o.el.firstChild.style.background=done?'':groupColor(d);
+    const t=_rvHyShort(d.name);
+    if(o.el.firstChild.textContent!==t)o.el.firstChild.textContent=t;
+    o.el.title=d.name;
+  });
+  _rvPinOv.forEach((o,d)=>{if(!want.has(d)){o.ov.setMap(null);_rvPinOv.delete(d);}});
+}
+function _rvPinMove(d,latLng){
+  const o=_rvPinOv.get(d);
+  if(o)o.ov.setPosition(latLng);
+  else _rvPinSync();
 }
 /* ── 미니맵 크기 조절 (v3.14.4) ──
    왼쪽 위 손잡이를 끌면 위·왼쪽으로 커지고 작아진다. 최소 140×110, 최대 로드뷰 화면의 70%. 크기는 이 기기에 기억. */
