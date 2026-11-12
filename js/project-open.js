@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project-open.js — 계획 열기/닫기 · 계획 데이터 불러오기 */
-AppFiles.reg('js/project-open.js','v3.15.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project-open.js','v3.15.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 프로젝트 열기 ━━
 async function openProject(proj){
@@ -17,6 +17,8 @@ async function openProject(proj){
   currentProject=proj;
   document.getElementById('homeView').style.display='none';
   document.getElementById('mapView').style.display='flex';
+  // 지도·목록 화면이 열려 있는 동안 페이지 전체는 스크롤하지 않음 — 휴대폰에서 주소창 높이만큼 밀려 위쪽 메뉴가 잘리던 문제 (v3.15.2)
+  document.documentElement.classList.add('map-open');window.scrollTo(0,0);
   document.getElementById('mapHeaderTitle').textContent=displayName;
   clearMapOverlays();
   items=[];hyState={};hyDraft={};hyExpanded={};groups=[];filterGroupVal=lockedFilterGroup;filterText='';quickFilter='';displayIndexOrder=null;sortMode='';
@@ -72,6 +74,7 @@ async function goHome(){
     const homeView=document.getElementById('homeView');
     if(mapView)mapView.style.display='none';
     if(homeView)homeView.style.display='block';
+    document.documentElement.classList.remove('map-open');
     currentProject=null;
     lockedFilterGroup='';teamFilterPrefix='';
     clearMapOverlays();

@@ -1,10 +1,13 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.15.1"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.15.2"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
 /* ═══ Map / Layout ═══ */
 #mapView{display:none;height:100vh;height:100dvh;flex-direction:column}
+html.map-open,html.map-open body{overflow:hidden;overscroll-behavior:none;height:100%} /* 지도·목록 화면에서는 페이지 전체 스크롤 막음 (v3.15.2) */
+html.map-open.printing-map,html.map-open.printing-map body{overflow:visible;height:auto}
+@media print{html.map-open,html.map-open body{overflow:visible!important;height:auto!important}}
 .map-header{padding:8px 14px;background:var(--sur);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:44px}
 .map-header-row1,.map-header-row2{display:contents}
 .map-header::-webkit-scrollbar{display:none}

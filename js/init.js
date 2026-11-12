@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/init.js — 시작 (DOMContentLoaded) · 키보드 */
-AppFiles.reg('js/init.js','v3.15.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/init.js','v3.15.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Init ══════════ */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   _sharedTooltip=document.createElement('div');
   _sharedTooltip.className='mk-tooltip';
   document.body.appendChild(_sharedTooltip);
-  document.getElementById('mapView').style.display='none';
+  document.getElementById('mapView').style.display='none';document.documentElement.classList.remove('map-open');
   loadProjects();
   // 홈 화면을 보는 동안 지도 SDK를 미리 받아 둠 (카드 누른 뒤 기다리는 시간 단축)
   KakaoGeo.preload();
