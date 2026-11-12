@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.25'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.26'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -261,6 +261,7 @@ function _rvFixStart(d){
   showToast('마커를 끌거나 미니맵을 눌러 로드뷰 속 핀을 실제 소화전에 맞춘 뒤 ✅ 저장','');
   bar.querySelector('.rv-fix-save').disabled=true;
   bar.style.display='flex';
+  _rvAimShow(true); // 로드뷰 화면 십자선 + 📐 조준 (v3.14.26)
   _rvHySync();
 }
 function _rvFixEnd(cancelled){
@@ -269,6 +270,7 @@ function _rvFixEnd(cancelled){
   if(rvMinimapInst)_rvRoadLine?.setMap(rvMinimapInst); // 파란 선 다시
   document.getElementById('rvMinimap')?.classList.remove('rv-fixing');
   const bar=document.getElementById('rvFixBar');if(bar)bar.style.display='none';
+  _rvAimShow(false);
   if(rvMinimapInst)rvMinimapInst.setDraggable(true);
   _rvHySync(); // 마커·로드뷰 핀을 원래(또는 저장된) 자리로
   if(cancelled)showToast('위치 수정 취소됨','');
@@ -383,6 +385,88 @@ function _rvPinMove(d,latLng){
   const o=_rvPinOv.get(d);
   if(o)o.ov.setPosition(latLng);
   else _rvPinSync();
+}
+/* ── 📐 두 곳에서 조준해 위치 구하기 (v3.14.26) ──
+   핀의 높이·거리 계산(사진 가장자리 왜곡, 높이 오차)을 쓰지 않고 '방향'만 쓴다.
+   로드뷰 화면 한가운데 십자선에 소화전 밑동을 맞추고 조준 → 그때의 로드뷰 위치와 보는 방향(pan)을 기록.
+   다른 지점(5~20m 떨어진 곳)에서 한 번 더 조준하면 두 방향선이 만나는 점으로 마커를 옮긴다. 저장은 ✅ 저장.
+   남은 오차는 로드뷰 촬영 위치 자체의 GPS 오차(1~3m)뿐. */
+let _rvAims=[],_rvAimLines=[];
+function _rvAimShow(on){
+  const body=document.querySelector('#rvPanel .rv-body');if(!body)return;
+  let cross=document.getElementById('rvCross'),bar=document.getElementById('rvAimBar');
+  if(on&&!cross){
+    cross=document.createElement('div');cross.id='rvCross';cross.className='rv-cross';body.appendChild(cross);
+    bar=document.createElement('div');bar.id='rvAimBar';bar.className='rv-aim-bar';
+    bar.innerHTML='<span></span><button class="rv-aim-btn">📐 조준</button><button class="rv-aim-reset" title="조준 다시">↺</button>';
+    bar.querySelector('.rv-aim-btn').addEventListener('click',e=>{e.stopPropagation();_rvAim();});
+    bar.querySelector('.rv-aim-reset').addEventListener('click',e=>{e.stopPropagation();_rvAimReset();_rvAimUi();});
+    ['mousedown','touchstart','pointerdown','click','dblclick'].forEach(t=>bar.addEventListener(t,e=>e.stopPropagation()));
+    body.appendChild(bar);
+  }
+  if(cross)cross.style.display=on?'block':'none';
+  if(bar)bar.style.display=on?'flex':'none';
+  _rvAimReset();
+  if(on)_rvAimUi();
+}
+function _rvAimUi(){
+  const bar=document.getElementById('rvAimBar');if(!bar)return;
+  const n=_rvAims.length;
+  bar.querySelector('span').textContent=n===0?'＋에 소화전 밑동 맞추기':n===1?'1/2 · 옆으로 옮겨 다시':'완료 · 확인 후 저장';
+  bar.querySelector('.rv-aim-btn').textContent=n===0?'📐 조준 1':n===1?'📐 조준 2':'📐 다시 조준';
+  bar.querySelector('.rv-aim-reset').style.display=n?'':'none';
+}
+function _rvAimReset(){_rvAims=[];_rvAimLines.forEach(l=>l.setMap(null));_rvAimLines=[];}
+// lat/lng ↔ 기준점 기준 m
+function _rvEN(o,ll){return [(ll.getLng()-o.getLng())*_rvMLng(o.getLat()),(ll.getLat()-o.getLat())*_rvM_LAT];}
+function _rvLL(o,e,n){return new kakao.maps.LatLng(o.getLat()+n/_rvM_LAT,o.getLng()+e/_rvMLng(o.getLat()));}
+function _rvAimLine(from,to,color){
+  if(!rvMinimapInst)return;
+  const l=new kakao.maps.Polyline({path:[from,to],strokeWeight:3,strokeColor:color,strokeOpacity:.9,strokeStyle:'shortdash'});
+  l.setMap(rvMinimapInst);_rvAimLines.push(l);
+}
+function _rvAim(){
+  if(!_rvFix)return;
+  const pos=rvInstance?.getPosition?.(),vp=rvInstance?.getViewpoint?.();
+  if(!pos||!vp||!isFinite(vp.pan))return;
+  if(_rvAims.length>=2)_rvAimReset(); // 세 번째는 처음부터 다시
+  if(_rvAims.length===1){
+    const [e,n]=_rvEN(_rvAims[0].pos,pos);
+    if(Math.hypot(e,n)<3){showToast('같은 자리입니다 — 로드뷰에서 5~20m 옆으로 옮긴 뒤 조준해 주세요','');return;}
+  }
+  _rvAims.push({pos,pan:vp.pan});
+  const th=vp.pan*Math.PI/180;
+  if(_rvAims.length===1){
+    _rvAimLine(pos,_rvLL(pos,60*Math.sin(th),60*Math.cos(th)),'#f97316');
+    showToast('조준 1 기록 — 로드뷰에서 5~20m 옆으로 옮겨 같은 소화전을 다시 조준하세요','ok');
+  }else{
+    const r=_rvAimCross(_rvAims[0],_rvAims[1]);
+    if(r.err){
+      showToast(r.err,'');
+      _rvAims.pop(); // 두 번째만 다시
+    }else{
+      _rvAimLines.forEach(l=>l.setMap(null));_rvAimLines=[];
+      _rvAimLine(_rvAims[0].pos,r.ll,'#f97316');
+      _rvAimLine(_rvAims[1].pos,r.ll,'#2563eb');
+      _rvFixSet(r.ll);
+      rvMinimapInst?.setCenter(r.ll);
+      showToast(`📐 두 방향이 만나는 곳으로 옮겼습니다 (교차각 ${Math.round(r.ang)}°) — 확인 후 ✅ 저장`,'ok');
+    }
+  }
+  _rvAimUi();
+}
+// 두 방향선의 교차점
+function _rvAimCross(a,b){
+  const o=a.pos,[ex,ny]=_rvEN(o,b.pos);
+  const t1=a.pan*Math.PI/180,t2=b.pan*Math.PI/180;
+  const d1=[Math.sin(t1),Math.cos(t1)],d2=[Math.sin(t2),Math.cos(t2)];
+  const cr=d1[0]*d2[1]-d1[1]*d2[0];
+  const ang=Math.asin(Math.min(1,Math.abs(cr)))*180/Math.PI;
+  if(ang<15)return {err:`두 방향이 거의 나란합니다(${Math.round(ang)}°) — 더 옆으로 옮겨서 조준 2를 해 주세요`};
+  const s1=(ex*d2[1]-ny*d2[0])/cr,s2=(ex*d1[1]-ny*d1[0])/cr; // a + s1·d1 = b + s2·d2
+  if(s1<=0||s2<=0)return {err:'두 방향이 만나지 않습니다 — 십자선을 같은 소화전에 맞췄는지 확인해 주세요'};
+  if(s1>150||s2>150)return {err:'교차점이 너무 멉니다(150m 넘음) — 소화전 가까이에서 조준해 주세요'};
+  return {ll:_rvLL(o,s1*d1[0],s1*d1[1]),ang:ang>90?180-ang:ang};
 }
 /* ── 로드뷰 사진 속 핀 끌어 옮기기 (v3.14.23) ──
    카카오는 '사진 속 이 점의 좌표'를 알려 주지 않는다. 대신 좌표 → 사진 속 위치는 카카오가 그려 준다.

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.25"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.14.26"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -163,6 +163,17 @@ html.printing-map .old-panel{display:none!important}
 .rv-pin.fixing.dragging,.rv-pin.fixing.dragging b{cursor:grabbing}
 .rv-pin.fixing::after{background:#f97316}
 .rv-probe{width:2px;height:2px;visibility:hidden;pointer-events:none}
+/* 📐 조준 (v3.14.26) */
+.rv-cross{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;z-index:4;pointer-events:none;display:none}
+.rv-cross::before,.rv-cross::after{content:'';position:absolute;background:#f97316;box-shadow:0 0 0 1px rgba(255,255,255,.9)}
+.rv-cross::before{left:21px;top:0;width:2px;height:44px}
+.rv-cross::after{top:21px;left:0;height:2px;width:44px}
+.rv-aim-bar{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;display:none;align-items:center;gap:6px;max-width:calc(100% - 16px);
+  background:rgba(15,23,42,.88);color:#fff;border-radius:8px;padding:5px 6px 5px 10px;font-size:12px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.rv-aim-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rv-aim-bar button{border:none;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;flex:0 0 auto}
+.rv-aim-btn{background:#f97316;color:#fff}
+.rv-aim-reset{background:rgba(255,255,255,.2);color:#fff}
 /* 미니맵 위치 수정 (v3.14.19) */
 .rv-hy-menu{background:#fff;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.35);padding:6px;display:flex;flex-direction:column;gap:5px;font-size:12px;color:#1e293b;white-space:nowrap}
 .rv-hy-menu b{font-size:12px;padding:0 2px}
