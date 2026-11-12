@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.14.27"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.15.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -185,8 +185,12 @@ html.printing-map .old-panel{display:none!important}
 .rv-hy-menu div{display:flex;gap:5px}
 .rv-hy-menu button{border:1px solid #cbd5e1;background:#f8fafc;border-radius:6px;padding:5px 7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:#1e293b}
 .rv-hy-menu button[data-a="fix"]{border-color:#f97316;color:#c2410c;background:#fff7ed}
-#rvMinimap.rv-fixing .rv-hy:not(.fixing){opacity:.3;pointer-events:none}
-#rvMinimap.rv-fixing div:has(> .rv-hy:not(.fixing)){pointer-events:none} /* 카카오 오버레이 감싸개도 통과시켜 그 자리를 눌러도 위치 지정 */
+#rvMinimap.rv-fixing:not(.rv-fix-pick) .rv-hy:not(.fixing){opacity:.3;pointer-events:none}
+#rvMinimap.rv-fix-pick .rv-hy{cursor:grab;touch-action:none} /* 고르기 단계: 아무 마커나 끌 수 있음 (v3.15.0) */
+#rvMinimap.rv-fix-pick .rv-hy i{outline:2px dashed #f97316;outline-offset:1px}
+.rv-mm-fix{position:absolute;top:4px;right:4px;z-index:6;border:none;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:800;
+  background:#f97316;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;font-family:inherit}
+#rvMinimap.rv-fixing:not(.rv-fix-pick) div:has(> .rv-hy:not(.fixing)){pointer-events:none} /* 카카오 오버레이 감싸개도 통과시켜 그 자리를 눌러도 위치 지정 */
 #rvMinimap.rv-fixing .rv-cam-box{display:none} /* 위치 수정 중에는 동동이 숨김 (v3.14.20) */
 .rv-hy.fixing{cursor:grab;touch-action:none}
 .rv-hy.fixing i{outline:3px solid #f97316;outline-offset:1px}

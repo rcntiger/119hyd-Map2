@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.27'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.15.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -26,7 +26,7 @@ function openRvAt(latLng){
     // ③ 로드뷰가 있는 길을 파란 선으로 (카카오맵과 같은 도로선)
     try{_rvRoadLine=new kakao.maps.RoadviewOverlay();_rvRoadLine.setMap(rvMinimapInst);}catch(e){}
     // ① 카메라 표시: 가운데 점 + 보고 있는 방향의 부채꼴 시야 (② 로드뷰를 돌리면 같이 회전)
-    rvOverlay=new kakao.maps.CustomOverlay({position:latLng,content:_rvCamEl(),xAnchor:.5,yAnchor:.5,zIndex:10});
+    rvOverlay=new kakao.maps.CustomOverlay({position:latLng,content:_rvCamEl(),xAnchor:.5,yAnchor:.5,zIndex:3}); // 소화전 마커(5)보다 아래 — 마커를 가리지 않게 (v3.15.0)
     rvOverlay.setMap(rvMinimapInst);
     kakao.maps.event.addListener(rvInstance,'position_changed',()=>{
       const pos=rvInstance.getPosition();
@@ -198,7 +198,7 @@ function _rvHySync(){
       el.innerHTML='<i></i><span></span>';
       el.addEventListener('click',e=>{
         e.stopPropagation();
-        if(_rvFix)return; // 수정 중에는 마커를 눌러도 아무 일 없음 (끌다가 실수로 취소되지 않게, 취소는 ✕ 버튼)
+        if(_rvFix){if(!_rvFix.d)_rvFixSelect(d);return;} // 고르기 단계면 그 소화전으로, 수정 중이면 아무 일 없음 (취소는 ✕ 버튼)
         _rvHyMenuOpen(d);
       });
       _rvFixDragInit(el,d);
@@ -261,20 +261,48 @@ function _rvFixStart(d){
     ['mousedown','touchstart','pointerdown','click','dblclick'].forEach(t=>bar.addEventListener(t,e=>e.stopPropagation()));
     mm.appendChild(bar);
   }
+  bar.querySelector('.rv-fix-save').disabled=true;
+  bar.style.display='flex';
+  _rvMmFixBtnSync();
+  if(d)_rvFixSelect(d);
+  else{ // 고르기 단계 (미니맵 📍 위치 수정 버튼, v3.15.0): 아무 마커나 끌거나 누르면 그 소화전으로 정해짐
+    mm.classList.add('rv-fix-pick');
+    bar.querySelector('span').textContent='📍 옮길 마커 고르기';
+    showToast('미니맵에서 옮길 소화전 마커를 끌거나 누르세요','');
+    bar.title='';
+    _rvAimShow(false);
+    _rvHySync();
+  }
+}
+// 고칠 소화전 정하기
+function _rvFixSelect(d){
+  if(!_rvFix)return;
+  _rvFix.d=d;
+  document.getElementById('rvMinimap')?.classList.remove('rv-fix-pick');
+  const bar=document.getElementById('rvFixBar');
   bar.querySelector('span').textContent=`📍 ${_rvHyShort(d.name)}번 위치 맞추기`; // 미니맵이 작아 짧게 — 설명은 알림으로
   bar.title=d.name;
   showToast('마커를 끌거나 미니맵을 눌러 로드뷰 속 핀을 실제 소화전에 맞춘 뒤 ✅ 저장','');
-  bar.querySelector('.rv-fix-save').disabled=true;
-  bar.style.display='flex';
   _rvAimShow(true); // 로드뷰 화면 십자선 + 📐 조준 (v3.14.26)
   _rvHySync();
+}
+// 미니맵 [📍 위치 수정] 버튼 (v3.15.0)
+function toggleRvMmFix(){
+  if(_rvFix){_rvFixEnd(true);return;}
+  _rvHyMenuClose();
+  _rvFixStart(null);
+}
+function _rvMmFixBtnSync(){
+  const b=document.getElementById('rvMmFixBtn');if(!b)return;
+  b.style.display=_rvFix?'none':''; // 수정 중에는 아래 [✕ 취소]로
 }
 function _rvFixEnd(cancelled){
   if(!_rvFix)return;
   _rvFix=null;
   if(rvMinimapInst)_rvRoadLine?.setMap(rvMinimapInst); // 파란 선 다시
-  document.getElementById('rvMinimap')?.classList.remove('rv-fixing');
+  document.getElementById('rvMinimap')?.classList.remove('rv-fixing','rv-fix-pick');
   const bar=document.getElementById('rvFixBar');if(bar)bar.style.display='none';
+  _rvMmFixBtnSync();
   _rvAimShow(false);
   if(rvMinimapInst)rvMinimapInst.setDraggable(true);
   _rvHySync(); // 마커·로드뷰 핀을 원래(또는 저장된) 자리로
@@ -283,6 +311,7 @@ function _rvFixEnd(cancelled){
 // 새 위치로 옮겨 두기 (묻지 않음 — 여러 번 옮겨 맞춘 뒤 ✅ 저장)
 function _rvFixSet(latLng){
   if(!_rvFix)return;
+  if(!_rvFix.d){showToast('먼저 옮길 마커를 끌거나 눌러 고르세요','');return;}
   const d=_rvFix.d;
   _rvFix.pos=latLng;
   _rvHyOv.get(d)?.ov.setPosition(latLng);
@@ -290,7 +319,7 @@ function _rvFixSet(latLng){
   const b=document.querySelector('#rvFixBar .rv-fix-save');if(b)b.disabled=false;
 }
 async function _rvFixSave(){
-  if(!_rvFix||!_rvFix.pos)return;
+  if(!_rvFix||!_rvFix.pos||!_rvFix.d)return;
   const d=_rvFix.d,latLng=_rvFix.pos,idx=items.indexOf(d);
   _rvFixEnd();
   if(idx<0)return;
@@ -302,13 +331,14 @@ async function _rvFixSave(){
 function _rvFixDragInit(el,d){
   let drag=null;
   el.addEventListener('pointerdown',e=>{
-    if(!_rvFix||_rvFix.d!==d||!rvMinimapInst)return;
+    if(!_rvFix||(_rvFix.d&&_rvFix.d!==d)||!rvMinimapInst)return;
+    if(!_rvFix.d)_rvFixSelect(d); // 고르기 단계: 끌기 시작한 마커로 정함
     e.preventDefault();e.stopPropagation();
     drag={x:e.clientX,y:e.clientY,moved:false};
     rvMinimapInst.setDraggable(false);
     try{el.setPointerCapture(e.pointerId);}catch{}
   });
-  ['mousedown','touchstart'].forEach(t=>el.addEventListener(t,e=>{if(_rvFix&&_rvFix.d===d)e.stopPropagation();}));
+  ['mousedown','touchstart'].forEach(t=>el.addEventListener(t,e=>{if(_rvFix&&(!_rvFix.d||_rvFix.d===d))e.stopPropagation();}));
   const toLatLng=e=>{
     const r=document.getElementById('rvMinimapInner').getBoundingClientRect();
     return rvMinimapInst.getProjection().coordsFromContainerPoint(new kakao.maps.Point(e.clientX-r.left,e.clientY-r.top));
@@ -342,7 +372,7 @@ function _rvPinSync(){
   const lat0=pos.getLat(),lng0=pos.getLng(),kx=111320*Math.cos(lat0*Math.PI/180);
   // 핀은 하나만 (여러 개면 사진에서 헷갈림, v3.14.24): 위치 수정 중이면 그 소화전, 아니면 100m 안 가장 가까운 소화전
   let pick=null;
-  if(_rvFix){pick=_rvFix.d;_rvNearText(`📍 ${_rvHyShort(pick.name)} 위치 수정 중`);}
+  if(_rvFix&&_rvFix.d){pick=_rvFix.d;_rvNearText(`📍 ${_rvHyShort(pick.name)} 위치 수정 중`);}
   else{
     let best=RV_PIN_RANGE;
     items.forEach(d=>{
@@ -355,7 +385,7 @@ function _rvPinSync(){
   }
   const want=new Set();
   (pick?[pick]:[]).forEach(d=>{
-    const fixing=!!_rvFix;
+    const fixing=!!(_rvFix&&_rvFix.d);
     want.add(d);
     let o=_rvPinOv.get(d);
     if(!o){
