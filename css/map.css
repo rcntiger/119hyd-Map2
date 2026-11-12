@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/map.css — 지도 화면 배치 · 목록 · 모바일 · 툴바 · 검색 · 거리재기 · 로드뷰 */
-:root{--appver-map:"v3.15.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-map:"v3.15.1"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* ── 맵 뷰 ── */
 
@@ -50,7 +50,8 @@
 .itag.itag-grp{font-size:10px} /* 조 이름(예: C구역 3조)은 다른 꼬리표보다 1px 크게 */
 .done-badge{display:none;font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(63,185,80,.12);color:var(--lo);font-weight:600;align-items:center;gap:3px}
 @media(max-width:600px){
-  .sidebar{width:100%;height:auto;max-height:calc(100dvh - 44px - 48px - 60px);border-right:none;border-bottom:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
+  /* 목록은 지도 보기 버튼 바로 위까지 (위쪽 메뉴 높이는 폰마다 달라 고정값 대신 남은 높이 기준, v3.15.1) */
+  .sidebar{width:100%;height:auto;max-height:calc(100% - 62px);border-right:none;border-bottom:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
   .map-wrap{flex:1;min-height:0;min-width:0}
   #map{width:100%;height:100%;min-height:0}
   .layout{height:100%}
