@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · css/marker.css — 마커 · 툴팁 · 정보카드(InfoWindow) · 카드 안 사진 */
-:root{--appver-marker:"v3.15.3"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
+:root{--appver-marker:"v3.16.0"} /* 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음) */
 
 /* 마커 */
 
@@ -62,6 +62,12 @@
 @keyframes hy-pulse{0%,100%{opacity:1}50%{opacity:.6}}
 .hy-locbtn-row{display:flex;gap:6px;margin-bottom:8px}
 .iw-latlng-row{font-size:10px;color:#94a3b8;margin-bottom:6px}
+.iw-loc-row{margin:3px 0 2px;font-size:11px}
+.loc-ok{display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#15803d;font-weight:700;padding:2px 4px 2px 8px;border-radius:10px}
+.loc-ok small{font-weight:600;color:#16a34a}
+.loc-undo{border:none;background:transparent;color:#64748b;font-size:11px;cursor:pointer;padding:0 4px;line-height:1}
+.loc-no{display:inline-flex;align-items:center;gap:6px;color:#64748b;font-weight:700}
+.loc-yes{border:1px solid #16a34a;background:#f0fdf4;color:#15803d;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit}
 .iw-locfixed-badge{display:inline-block;background:#dbeafe;color:#2563eb;font-weight:700;padding:1px 6px;border-radius:8px;font-size:9.5px;margin-left:2px}
 .iw-rv-inline:hover{background:#22c55e;color:#fff;border-color:#22c55e}
 .iw-extra{font-size:10px;color:#3b82f6;margin-bottom:10px;font-weight:600}

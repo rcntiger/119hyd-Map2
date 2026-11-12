@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.15.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.16.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -207,6 +207,7 @@ function _rvHySync(){
       if(!p||Math.abs(p.getLat()-d.lat)>1e-9||Math.abs(p.getLng()-d.lng)>1e-9)o.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));
     }
     o.el.classList.toggle('fixing',!!(_rvFix&&_rvFix.d===d));
+    o.el.classList.toggle('locno',!locOk(d)); // 위치 미확인은 점선 테두리 (v3.16.0)
     // 색·완료·이름은 매번 맞춤 (로드뷰를 보는 중에 완료 처리한 것도 반영)
     const done=!!doneMap[d.id];
     o.el.classList.toggle('done',done);
@@ -228,13 +229,16 @@ function _rvHyMenuOpen(d){
   _rvHyMenuClose();
   const el=document.createElement('div');
   el.className='rv-hy-menu';
-  el.innerHTML=`<b></b><div><button data-a="go">🔭 로드뷰 이동</button><button data-a="fix">📍 위치 수정</button></div>`;
+  const ok=locOk(d);
+  el.innerHTML=`<b></b><div><button data-a="go">🔭 로드뷰 이동</button><button data-a="fix">📍 위치 수정</button>${ok?'':'<button data-a="ok">✅ 위치 맞음</button>'}</div>`
+    +(ok?`<small>🟢 위치 확인 · ${_locDateText(ok.at)}${ok.by?' '+esc(ok.by):''}</small>`:'');
   el.querySelector('b').textContent=d.name;
   el.addEventListener('click',e=>{
     e.stopPropagation();
     const a=e.target.closest('button')?.dataset.a;if(!a)return;
     _rvHyMenuClose();
     if(a==='go')_rvGoTo(new kakao.maps.LatLng(d.lat,d.lng),true);
+    else if(a==='ok')setLocOk(items.indexOf(d),true,'로드뷰 확인');
     else _rvFixStart(d);
   });
   ['mousedown','touchstart'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation()));
@@ -304,21 +308,22 @@ function _rvFixEnd(cancelled){
   if(cancelled)showToast('위치 수정 취소됨','');
 }
 // 새 위치로 옮겨 두기 (묻지 않음 — 여러 번 옮겨 맞춘 뒤 ✅ 저장)
-function _rvFixSet(latLng){
+function _rvFixSet(latLng,via){
   if(!_rvFix)return;
   if(!_rvFix.d){showToast('먼저 옮길 마커를 끌거나 눌러 고르세요','');return;}
   const d=_rvFix.d;
   _rvFix.pos=latLng;
+  _rvFix.via=via||'미니맵'; // 마지막으로 옮긴 방법 → 이력·위치 확인에 남김
   _rvHyOv.get(d)?.ov.setPosition(latLng);
   _rvPinSync();
   const b=document.querySelector('#rvFixBar .rv-fix-save');if(b)b.disabled=false;
 }
 async function _rvFixSave(){
   if(!_rvFix||!_rvFix.pos||!_rvFix.d)return;
-  const d=_rvFix.d,latLng=_rvFix.pos,idx=items.indexOf(d);
+  const d=_rvFix.d,latLng=_rvFix.pos,idx=items.indexOf(d),via=_rvFix.via;
   _rvFixEnd();
   if(idx<0)return;
-  _fixMeta={method:'미니맵(로드뷰)'}; // 이력에 남는 방법 (gps.js)
+  _fixMeta={method:via==='📐 조준'?'📐 조준(로드뷰)':'미니맵(로드뷰)'}; // 이력·위치 확인에 남는 방법 (gps.js)
   await applyFixLocation(idx,latLng);
   _rvHySync();
 }
@@ -439,7 +444,7 @@ function _rvAim(){
       _rvAimLines.forEach(l=>l.setMap(null));_rvAimLines=[];
       _rvAimLine(_rvAims[0].pos,r.ll,'#f97316');
       _rvAimLine(_rvAims[1].pos,r.ll,'#2563eb');
-      _rvFixSet(r.ll);
+      _rvFixSet(r.ll,'📐 조준');
       rvMinimapInst?.setCenter(r.ll);
       showToast(`📐 두 방향이 만나는 곳으로 옮겼습니다 (교차각 ${Math.round(r.ang)}°) — 확인 후 ✅ 저장`,'ok');
     }

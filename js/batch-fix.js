@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/batch-fix.js — 일괄 위치수정 (PC 전용) */
-AppFiles.reg('js/batch-fix.js','v3.15.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/batch-fix.js','v3.16.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 일괄 위치수정 (PC 전용) ══════════
    현재 지도에 보이는(필터 적용된) 소화전을 끌어서 옮길 수 있는 마커로 바꾸고,
@@ -118,7 +118,7 @@ async function saveBatchFix(){
       if(withAddr){
         const ra=await reverseGeocode2(lat,lng);
         if(ra.road||ra.jibun)payload.address=ra.road||ra.jibun;else addrFail++;
-        if(ra.jibun)payload.extra={...(rec.d.extra||{}),'지번주소':ra.jibun};
+        payload.extra={...(rec.d.extra||{}),...(ra.jibun?{'지번주소':ra.jibun}:{}),_loc_ok:locOkValue('일괄 위치수정')}; // 위치 확인도 함께 (v3.16.0)
       }
       await SupabaseUtil.update('hydmap_items',payload,{id:rec.d.id});
       const d=rec.d;

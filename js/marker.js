@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.15.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.16.0'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -264,6 +264,7 @@ function renderPopup(iwEl,idx,d,iw){
     </div>
     ${d.address?`<div class="iw-addr-row"><span class="iw-addr iw-addr-full">📍 ${esc((d.address||'').replace(/^서울특별시\s*/,''))}</span></div>`:''}
     <div class="iw-latlng-row">🧭 위도 ${d.lat?d.lat.toFixed(6):'-'}, 경도 ${d.lng?d.lng.toFixed(6):'-'}${d.loc_fixed_at?` <span class="iw-locfixed-badge">📍 ${(dt=>`${String(dt.getFullYear()).slice(-2)}.${dt.getMonth()+1}.${dt.getDate()}`)(new Date(d.loc_fixed_at))} 수정</span>`:''}</div>
+    <div class="iw-loc-row">${locBadgeHtml(idx,d)}</div>
     <div class="hy-fixloc-row">
       ${d.lat&&d.lng?`<button class="hy-fixloc-btn" onclick="startFixLocation(${idx})">📍 위치 수정</button>`:`<button class="hy-fixloc-btn pc-only" onclick="startPlaceLocation(${idx})">📍 위치 지정 (지도에서 누르기 · 현위치)</button>`}
       ${d.lat&&d.lng?`<button class="hy-fixloc-btn hy-rv-btn" onclick="openRvFromPopup(new kakao.maps.LatLng(${d.lat},${d.lng}))">🔭 로드뷰</button>`:''}
