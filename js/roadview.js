@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.14.26'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.14.27'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -12,6 +12,10 @@ function openRvAt(latLng){
   document.getElementById('rvPanel').style.display='flex';
   // 휴대폰: 로드뷰를 끄는 동안 페이지가 밀려 위쪽 메뉴 줄이 사라지던 문제 → 스크롤 막고 맨 위로 (v3.14.25)
   document.documentElement.classList.add('rv-open');
+  if(!_rvPinOutsideBound){ // 핀 메뉴 밖을 누르면 닫기 (한 번만 연결)
+    _rvPinOutsideBound=true;
+    document.getElementById('rvPanel').addEventListener('pointerdown',e=>{if(!e.target.closest?.('.rv-pin'))_rvPinMenuClose();},true);
+  }
   window.scrollTo(0,0);
   document.getElementById('rvHint').textContent=`${latLng.getLat().toFixed(5)}, ${latLng.getLng().toFixed(5)}`;
   const tb=document.getElementById('mapToolbar');if(tb)tb.style.top='56px';
@@ -223,7 +227,7 @@ function _rvHySync(){
      · 파란 도로선을 숨기고, 다른 마커는 흐리게(누르면 통과), 동동이 끌기는 막음
      · 미니맵을 누르거나 마커를 끌어 놓으면 그 자리로 옮겨 둠(묻지 않음, 몇 번이든) → 안내 줄 [✅ 저장]으로 저장 (v3.14.22)
        저장은 큰 지도의 위치 수정과 같음(applyFixLocation) · [✕ 취소]면 원래 자리로 */
-let _rvRoadLine=null,_rvFix=null,_rvHyMenu=null;
+let _rvRoadLine=null,_rvFix=null,_rvHyMenu=null,_rvPinOutsideBound=false;
 function _rvHyMenuOpen(d){
   _rvHyMenuClose();
   const el=document.createElement('div');
@@ -243,6 +247,7 @@ function _rvHyMenuOpen(d){
 }
 function _rvHyMenuClose(){if(!_rvHyMenu)return false;_rvHyMenu.setMap(null);_rvHyMenu=null;return true;}
 function _rvFixStart(d){
+  _rvPinMenuClose();
   _rvFix={d,pos:null}; // pos: 옮겨 둔 새 위치 (저장 전)
   _rvRoadLine?.setMap(null); // 파란 선 숨김
   const mm=document.getElementById('rvMinimap');
@@ -356,7 +361,8 @@ function _rvPinSync(){
     if(!o){
       const el=document.createElement('div');
       el.className='rv-pin';
-      el.innerHTML='<b></b>';
+      el.innerHTML='<b></b><div class="rv-pin-menu"><button>📍 위치 수정</button></div>';
+      _rvPinMenuInit(el,d); // 핀을 누르면 위치 수정 메뉴 (v3.14.27)
       const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(d.lat,d.lng),content:el,xAnchor:.5,yAnchor:1,zIndex:3});
       try{ov.setRange?.(RV_PIN_RANGE+50);}catch(e){}
       _rvPinDragInit(el,d); // 위치 수정 중이면 로드뷰 속에서 끌어 옮기기 (v3.14.23)
@@ -537,6 +543,34 @@ function _rvScreenToLatLng(cal,x,y){
   const ahead=e*cal.fwd[0]+n*cal.fwd[1];
   if(!(ahead>0.5)||Math.hypot(e,n)>60)return null;
   return new kakao.maps.LatLng(cal.lat0+n/_rvM_LAT,cal.lng0+e/cal.mlng);
+}
+// 로드뷰 속 핀 누르기 → [📍 위치 수정] 메뉴 (위치 수정 중에는 메뉴 없이 끌기만)
+function _rvPinMenuInit(el,d){
+  const b=el.firstChild,menu=el.querySelector('.rv-pin-menu');
+  ['mousedown','touchstart','pointerdown'].forEach(t=>{
+    b.addEventListener(t,e=>{if(!_rvFix)e.stopPropagation();},{passive:true});
+    menu.addEventListener(t,e=>e.stopPropagation(),{passive:true});
+  });
+  b.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(_rvFix)return;
+    const show=!el.classList.contains('menu');
+    _rvPinMenuClose();
+    el.classList.toggle('menu',show);
+  });
+  menu.querySelector('button').addEventListener('click',e=>{
+    e.stopPropagation();
+    _rvPinMenuClose();
+    _rvFixFromRoadview(d);
+  });
+}
+function _rvPinMenuClose(){_rvPinOv.forEach(o=>o.el.classList.remove('menu'));}
+function _rvFixFromRoadview(d){
+  _rvHyMenuClose();
+  if(_rvFix)_rvFixEnd();
+  // 저장·취소 버튼과 위치 확인이 미니맵에 있으므로 꺼져 있으면 켠다
+  if(!minimapOn){toggleMinimap(true);setTimeout(()=>_rvFixStart(d),120);}
+  else _rvFixStart(d);
 }
 function _rvPinDragInit(el,d){
   let drag=null;
