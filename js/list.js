@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.16.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.16.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){
@@ -39,6 +39,8 @@ function buildListItem(i){
     </div>`;
   div.addEventListener('click',()=>{
     if(pickMode){togglePicked(d.id);return;} // 선택 모드에서는 카드 클릭도 체크 토글로 동작
+    // 로드뷰를 열어 둔 상태면 그 소화전 로드뷰로 이동 (v3.16.3)
+    if(document.getElementById('rvPanel')?.style.display==='flex'&&d.lat&&d.lng){_rvGoItem(i);return;}
     setActive(i);
     if(!(d.lat&&d.lng)){ncOpenCard(i);return;} // 좌표가 없어 마커가 없는 항목: 화면 가운데에 정보카드를 띄움
     ovlCloseChooser();

@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.16.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.16.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -145,7 +145,7 @@ function _rvDragInit(box){
 }
 function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
 function closeRv(){
-  _rvFixEnd();_rvHyMenuClose();
+  _rvFixEnd();_rvHyMenuClose();toggleRvSearch(false);
   document.getElementById('rvPanel').style.display='none';setRvMode(false);
   document.documentElement.classList.remove('rv-open');
   _rvPinSync(); // 가까운 소화전 안내 비움
@@ -155,6 +155,50 @@ function closeRv(){
   _rvHySync(); // 미니맵 소화전 표시 비움 (다음에 열 때 최신 상태로 다시 그림)
   const btn=document.getElementById('btnMinimap');if(btn){btn.style.background='';btn.style.color='';}
   if(lastIw&&kakaoMap){lastIw.setMap(kakaoMap);iwOpen=lastIw;lastIw=null;}
+}
+/* ── 로드뷰에서 소화전 검색 → 그 소화전 로드뷰로 (v3.16.3) ──
+   대상은 지금 고른 그룹 안의 소화전(목록과 같은 범위, 좌표 있는 것). 번호(350)·이름·주소 일부로 찾는다. */
+function toggleRvSearch(force){
+  const w=document.getElementById('rvSearch');if(!w)return;
+  const on=force!==undefined?force:w.style.display!=='block';
+  w.style.display=on?'block':'none';
+  document.getElementById('btnRvSearch')?.classList.toggle('on',on);
+  if(on){const inp=document.getElementById('rvSearchInput');inp.value='';_rvSearchRun();setTimeout(()=>inp.focus(),30);}
+}
+function _rvSearchList(q){
+  const k=String(q||'').replace(/\s/g,'').toLowerCase();if(!k)return [];
+  const res=[];
+  items.forEach((d,i)=>{
+    if(!d.lat||!d.lng||_baseHidden(d))return;
+    const name=String(d.name||'').replace(/\s/g,'').toLowerCase(),addr=String(d.address||'').replace(/\s/g,'').toLowerCase();
+    const num=_rvHyShort(d.name);
+    let score=-1;
+    if(num===k)score=0;else if(name===k)score=0;else if(name.includes(k))score=1;else if(addr.includes(k))score=2;
+    if(score>=0)res.push({i,d,score});
+  });
+  res.sort((a,b)=>a.score-b.score||String(a.d.name).localeCompare(String(b.d.name)));
+  return res.slice(0,8);
+}
+function _rvSearchRun(){
+  const box=document.getElementById('rvSearchRes');if(!box)return;
+  const q=document.getElementById('rvSearchInput').value.trim();
+  if(!q){box.innerHTML='';return;}
+  const res=_rvSearchList(q);
+  box.innerHTML=res.length?res.map(r=>`<button onclick="_rvGoItem(${r.i})"><b>${esc(r.d.name)}</b><span>${esc((r.d.address||'').replace(/^서울(특별시)?\s*/,''))}</span></button>`).join('')
+    :'<div class="rv-search-none">찾는 소화전이 없습니다</div>';
+}
+function _rvSearchPickFirst(){const r=_rvSearchList(document.getElementById('rvSearchInput').value)[0];if(r)_rvGoItem(r.i);}
+// 그 소화전 근처 로드뷰로 이동 (목록 클릭·검색에서). '← 지도로' 때 그 소화전 카드가 열리게 해 둔다
+function _rvGoItem(i){
+  const d=items[i];if(!d||!d.lat||!d.lng)return;
+  toggleRvSearch(false);
+  setActive(i);
+  if(overlays[i]){try{ensurePopupRendered(i);}catch(e){}if(overlays[i].iw)lastIw=overlays[i].iw;}
+  const ll=new kakao.maps.LatLng(d.lat,d.lng);
+  new kakao.maps.RoadviewClient().getNearestPanoId(ll,50,panoId=>{
+    if(panoId){rvInstance.setPanoId(panoId,ll);document.getElementById('rvHint').textContent=d.name;showToast(`🔭 ${d.name} 로드뷰로 이동`,'ok');}
+    else showToast(`${d.name} 근처 50m 안에 로드뷰 사진이 없습니다`,'err');
+  });
 }
 function toggleMinimap(auto){
   minimapOn=!minimapOn;
