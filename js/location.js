@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/location.js — 잘못된 위치 수정 · 좌표→주소 · 좌표 재검색 · 확인 핀 */
-AppFiles.reg('js/location.js','v3.16.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/location.js','v3.16.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // 좌표가 없는 개별 항목만 다시 지오코딩 시도
 // ━━ 잘못된 위치 수정 (지도를 클릭해 새 위치 지정) ━━
@@ -55,7 +55,7 @@ async function applyFixLocation(idx,latLng){
     const method=_fixMeta?.method||'지도 클릭';_fixMeta=null;
     const payload={lat,lng,loc_fixed_at:new Date().toISOString()};
     if(addr)payload.address=addr;
-    // 위치를 고쳐 저장하면 '위치 확인'도 함께 (loc-check.js, v3.16.0)
+    // 위치를 고쳐 저장하면 방법도 남김 — 방법에 '로드뷰'가 있을 때만 🟢 로드뷰 확인 (loc-check.js, v3.16.4)
     payload.extra={...(d.extra||{}),...(ra.jibun?{'지번주소':ra.jibun}:{}),_loc_ok:locOkValue(method)};
     await SupabaseUtil.update('hydmap_items',payload,{id:d.id});
     d.lat=lat;d.lng=lng;d.loc_fixed_at=payload.loc_fixed_at;

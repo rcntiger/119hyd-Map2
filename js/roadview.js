@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.16.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.16.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -274,7 +274,7 @@ function _rvHyMenuOpen(d){
   const el=document.createElement('div');
   el.className='rv-hy-menu';
   const ok=locOk(d);
-  el.innerHTML=`<b></b><div><button data-a="go">🔭 로드뷰 이동</button><button data-a="fix">📍 위치 수정</button>${ok?'':'<button data-a="ok">✅ 위치 맞음</button>'}</div>`
+  el.innerHTML=`<b></b><div><button data-a="go">🔭 로드뷰 이동</button><button data-a="fix">📍 위치 수정</button>${ok?'':'<button data-a="ok">✅ 로드뷰 확인</button>'}</div>`
     +(ok?`<small>🟢 ${locLabel(ok)}</small>`:'');
   el.querySelector('b').textContent=d.name;
   el.addEventListener('click',e=>{

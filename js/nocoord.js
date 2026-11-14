@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/nocoord.js — 좌표 없는 소화전: 위치 지정 · 지도 없이 정보카드 · 모아 보기(좌표없음/겹친 위치) 버튼 */
-AppFiles.reg('js/nocoord.js','v3.16.3'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/nocoord.js','v3.16.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 모아 보기 (목록 위 버튼) ══════════
    ''        : 평소
@@ -29,7 +29,7 @@ function updateQuickChips(){
    // 노후는 현장(휴대폰)에서도 볼 수 있게 pc-only를 붙이지 않는다
    +(ol||quickFilter==='old'?chip('old',quickFilter==='old',`⏳ 노후 ${ol}개`,'노후 소화전만 목록과 지도에 보기').replace(' pc-only',''):'')
    // 위치 미확인: 로드뷰로 위치 맞추는 작업은 휴대폰에서도 하므로 pc-only 아님 (v3.16.0)
-   +(ln||quickFilter==='locno'?chip('locno',quickFilter==='locno',`❔ 위치 미확인 ${ln}개`,'지도 위치를 아직 확인하지 않은 소화전만 목록과 지도에 보기').replace(' pc-only',''):'');
+   +(ln||quickFilter==='locno'?chip('locno',quickFilter==='locno',`❔ 로드뷰 미확인 ${ln}개`,'로드뷰로 아직 위치를 확인하지 않은 소화전만 목록과 지도에 보기').replace(' pc-only',''):'');
   row.style.display='flex';
 }
 
