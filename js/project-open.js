@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/project-open.js — 계획 열기/닫기 · 계획 데이터 불러오기 */
-AppFiles.reg('js/project-open.js','v3.16.1'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/project-open.js','v3.16.2'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 프로젝트 열기 ━━
 async function openProject(proj){
@@ -53,6 +53,9 @@ async function goHome(){
   try{
     flushPendingMemos(); // 저장을 기다리던 메모 (record.js)
     areaCancel(); // 인쇄 영역 지정 중이었다면 정리
+    // 로드뷰를 연 채로 나가면 로드뷰의 '페이지 스크롤 막기'(html.rv-open)가 남아 초기화면 목록이 잘리던 문제 (v3.16.2)
+    if(document.getElementById('rvPanel')?.style.display==='flex'){try{closeRv();}catch(e){}}
+    lastIw=null; // 로드뷰 닫을 때 되살릴 카드 — 다른 계획으로 넘어가므로 버림
     if(kakaoMap){Object.values(overlays).forEach(o=>{o.overlay?.setMap(null);o.iw?.setMap(null);});}
     if(iwOpen){iwOpen.setMap(null);iwOpen=null;}
     // 모바일 상태 초기화
@@ -74,7 +77,7 @@ async function goHome(){
     const homeView=document.getElementById('homeView');
     if(mapView)mapView.style.display='none';
     if(homeView)homeView.style.display='block';
-    document.documentElement.classList.remove('map-open');
+    document.documentElement.classList.remove('map-open','rv-open'); // 스크롤 막기 표시 모두 해제 (안전장치)
     currentProject=null;
     lockedFilterGroup='';teamFilterPrefix='';
     clearMapOverlays();
