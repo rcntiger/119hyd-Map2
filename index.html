@@ -13,7 +13,7 @@
    · 버전을 올릴 때는 손으로 고치지 말고:  python tools/bump-version.py 3.0.1
      (이 줄과 모든 파일의 버전 표시를 한 번에 바꾼다.  확인만:  python tools/bump-version.py --check)
    ═══════════════════════════════════════════════════════════════════════ */
-const APP_VERSION = 'v3.16.4';
+const APP_VERSION = 'v3.16.5';
 
 const AppFiles = {
   // 불러오는 순서 = 아래 적힌 순서. 파일을 추가하면 여기에도 적는다.
@@ -172,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => AppFiles.report());
             <button class="fbtn" onclick="pickBulkDone(true)" style="flex:1;font-size:11.5px;padding:5px 9px;font-weight:700;border-color:#22c55e;color:#22c55e">✓ 완료 처리</button>
             <button class="fbtn" onclick="pickBulkDone(false)" style="flex:1;font-size:11.5px;padding:5px 9px;font-weight:700">↺ 완료 해제</button>
           </div>
+          <button class="fbtn admin-only" onclick="pickBulkLocUndo()" style="font-size:11.5px;padding:6px 9px;font-weight:700">⚪ 선택한 소화전 로드뷰 확인 취소 (관리자)</button>
           <button class="fbtn admin-only" onclick="showRegroupModal()" style="font-size:11.5px;padding:6px 9px;font-weight:700;border-color:var(--lo);color:var(--lo)">🔀 선택한 소화전 조 변경 (관리자)</button>
         </div>
         <!-- 선택 표시가 적용된 상태: 해제 버튼 -->

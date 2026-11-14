@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/loc-check.js — 로드뷰 확인 표시 (로드뷰로 보고 지도 위치를 맞췄는지) */
-AppFiles.reg('js/loc-check.js','v3.16.4'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/loc-check.js','v3.16.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 로드뷰 확인 (v3.16.0 → v3.16.4) ══════════
    소화전마다 '로드뷰로 보고 지도 위치를 맞췄는지(확인했는지)'를 남긴다.
@@ -53,6 +53,30 @@ async function setLocOk(idx,ok,method){
     showToast('저장 실패: '+(e?.message||''),'err');
   }
   locRefresh(idx);
+}
+// ☑ 선택한 소화전의 로드뷰 확인 한꺼번에 취소 (관리자만, v3.16.5)
+//   그룹 전체는: 그룹 고르기 → ☑ 선택 → 보이는 전체 선택 → 이 버튼
+async function pickBulkLocUndo(){
+  if(!isAdmin){showToast('관리자만 할 수 있습니다','err');return;}
+  const sel=items.filter(d=>pickedIds.has(d.id));
+  if(!sel.length){showToast('먼저 소화전을 선택하세요','err');return;}
+  const targets=sel.filter(d=>locOk(d));
+  if(!targets.length){showToast('선택한 소화전 중 로드뷰 확인된 것이 없습니다','err');return;}
+  if(!confirm(`선택한 ${sel.length}개 중 로드뷰 확인 ${targets.length}개를 미확인으로 되돌릴까요?\n(위치는 그대로, 이력에 남음)`))return;
+  let ok=0,fail=0;
+  const tasks=targets.map(d=>async()=>{
+    const prev=d.extra,extra={...(d.extra||{}),_loc_ok:false};
+    try{
+      await SupabaseUtil.update('hydmap_items',{extra},{id:d.id});
+      d.extra=extra;ok++;
+      logHistory(d,'로드뷰 확인 취소',{bulk:true});
+    }catch(e){d.extra=prev;fail++;}
+  });
+  showToast(`로드뷰 확인 취소 중… 0/${targets.length}`,'');
+  await _runPool(tasks,5,(n,t)=>{if(n%10===0||n===t)showToast(`로드뷰 확인 취소 중… ${n}/${t}`,'');});
+  targets.forEach(d=>{const i=items.indexOf(d);if(document.getElementById(`item-${i}`))updateListItem(i);});
+  locRefresh(activeIdx);
+  showToast(fail?`⚪ ${ok}개 취소, ${fail}개 실패 — 다시 시도해 주세요`:`⚪ 로드뷰 확인 ${ok}개를 미확인으로 되돌렸습니다`,fail?'err':'ok');
 }
 // 표시 갱신: 열린 카드 · 목록 꼬리표 · 모아 보기 · 로드뷰 미니맵
 function locRefresh(idx){
