@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.16.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.16.7'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -154,7 +154,31 @@ function closeRv(){
   minimapOn=false;document.getElementById('rvMinimap').style.display='none'; // 다음에 열 때 다시 기본값(PC 켬)으로
   _rvHySync(); // 미니맵 소화전 표시 비움 (다음에 열 때 최신 상태로 다시 그림)
   const btn=document.getElementById('btnMinimap');if(btn){btn.style.background='';btn.style.color='';}
-  if(lastIw&&kakaoMap){lastIw.setMap(kakaoMap);iwOpen=lastIw;lastIw=null;}
+  _rvBackToMap();
+}
+// '← 지도로': 지도를 로드뷰의 마지막 위치로 옮김 (v3.16.7)
+//   카드는 마지막 위치가 그 소화전에서 50m 안일 때만 다시 열고, 멀면 닫은 채로(선택 표시도 해제)
+function _rvBackToMap(){
+  const pos=rvInstance?.getPosition?.();
+  if(!kakaoMap)return;
+  if(!pos){ // 로드뷰 사진을 한 번도 못 띄운 경우: 예전처럼 원래 자리·카드 그대로
+    if(lastIw){lastIw.setMap(kakaoMap);iwOpen=lastIw;lastIw=null;}
+    return;
+  }
+  let cardIdx=-1;
+  if(lastIw)for(const k in overlays){if(overlays[k]?.iw===lastIw){cardIdx=+k;break;}}
+  const d=cardIdx>=0?items[cardIdx]:null;
+  const near=d&&d.lat&&d.lng&&Math.hypot((d.lat-pos.getLat())*110540,(d.lng-pos.getLng())*111320*Math.cos(pos.getLat()*Math.PI/180))<=50;
+  if(kakaoMap.getLevel()>3)kakaoMap.setLevel(3);
+  if(near){
+    lastIw.setMap(kakaoMap);iwOpen=lastIw;lastIw=null;
+    markActive(cardIdx);
+    panToForCard(pos.getLat(),pos.getLng()); // 카드가 화면 안에 들어오게 맞춰 이동
+  }else{
+    lastIw=null;
+    markActive(-1);
+    kakaoMap.setCenter(pos);
+  }
 }
 /* ── 로드뷰에서 소화전 검색 → 그 소화전 로드뷰로 (v3.16.3) ──
    대상은 지금 고른 그룹 안의 소화전(목록과 같은 범위, 좌표 있는 것). 번호(350)·이름·주소 일부로 찾는다. */
