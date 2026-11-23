@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/roadview.js — 로드뷰 */
-AppFiles.reg('js/roadview.js','v3.16.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/roadview.js','v3.16.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ RoadView ══════════ */
 function setRvMode(on){rvMode=on;const btn=document.getElementById('btnRv');if(on){btn.classList.add('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 위치 클릭...</span>';if(kakaoMap)kakaoMap.setCursor('crosshair');}else{btn.classList.remove('on-rv');btn.innerHTML='🔭<span class="btn-txt"> 로드뷰</span>';if(kakaoMap)kakaoMap.setCursor('');}}
@@ -143,7 +143,7 @@ function _rvDragInit(box){
   box.addEventListener('pointerup',end);
   box.addEventListener('pointercancel',e=>{if(!drag)return;const d=drag;drag=null;box.classList.remove('dragging');rvMinimapInst.setDraggable(true);rvOverlay.setPosition(d.from);});
 }
-function openRvFromPopup(latLng){lastIw=iwOpen;closeIw();openRvAt(latLng);}
+function openRvFromPopup(latLng){const sel=_selIdx;lastIw=iwOpen;closeIw();openRvAt(latLng);markActive(sel);} // 로드뷰를 보는 동안에도 그 소화전 선택 표시 유지
 function closeRv(){
   _rvFixEnd();_rvHyMenuClose();toggleRvSearch(false);
   document.getElementById('rvPanel').style.display='none';setRvMode(false);
@@ -192,7 +192,7 @@ function _rvSearchPickFirst(){const r=_rvSearchList(document.getElementById('rvS
 function _rvGoItem(i){
   const d=items[i];if(!d||!d.lat||!d.lng)return;
   toggleRvSearch(false);
-  setActive(i);
+  setActive(i);markActive(i);
   if(overlays[i]){try{ensurePopupRendered(i);}catch(e){}if(overlays[i].iw)lastIw=overlays[i].iw;}
   const ll=new kakao.maps.LatLng(d.lat,d.lng);
   new kakao.maps.RoadviewClient().getNearestPanoId(ll,50,panoId=>{
@@ -251,7 +251,9 @@ function _rvHySync(){
       if(!p||Math.abs(p.getLat()-d.lat)>1e-9||Math.abs(p.getLng()-d.lng)>1e-9)o.ov.setPosition(new kakao.maps.LatLng(d.lat,d.lng));
     }
     o.el.classList.toggle('fixing',!!(_rvFix&&_rvFix.d===d));
-    o.el.classList.toggle('locno',!locOk(d)); // 위치 미확인은 점선 테두리 (v3.16.0)
+    o.el.classList.toggle('locno',!locOk(d));
+    o.el.classList.toggle('sel',items.indexOf(d)===_selIdx); // 선택한 소화전 (노란 깜빡임, v3.16.6)
+    try{o.ov.setZIndex(items.indexOf(d)===_selIdx?6:5);}catch(e){} // 위치 미확인은 점선 테두리 (v3.16.0)
     // 색·완료·이름은 매번 맞춤 (로드뷰를 보는 중에 완료 처리한 것도 반영)
     const done=!!doneMap[d.id];
     o.el.classList.toggle('done',done);

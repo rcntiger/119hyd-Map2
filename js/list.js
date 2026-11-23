@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/list.js — 목록 그리기 */
-AppFiles.reg('js/list.js','v3.16.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/list.js','v3.16.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 // ━━ 목록 렌더 ━━
 function renderList(){
@@ -54,9 +54,7 @@ function buildListItem(i){
           if(iwOpen)iwOpen.setMap(null);
           overlays[i].iw.setMap(kakaoMap);
           iwOpen=overlays[i].iw;
-          if(activeMarkerEl)activeMarkerEl.classList.remove('active-mk');
-          const markerEl=overlays[i].overlay?.getContent&&overlays[i].overlay.getContent();
-          if(markerEl){markerEl.classList.add('active-mk');activeMarkerEl=markerEl;}
+          markActive(i); // 선택 표시 (marker.js)
           if(_sharedTooltip)_sharedTooltip.style.opacity='0';
         }
       }

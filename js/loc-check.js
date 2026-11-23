@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/loc-check.js — 로드뷰 확인 표시 (로드뷰로 보고 지도 위치를 맞췄는지) */
-AppFiles.reg('js/loc-check.js','v3.16.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/loc-check.js','v3.16.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ 로드뷰 확인 (v3.16.0 → v3.16.4) ══════════
    소화전마다 '로드뷰로 보고 지도 위치를 맞췄는지(확인했는지)'를 남긴다.

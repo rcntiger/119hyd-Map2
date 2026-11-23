@@ -1,5 +1,5 @@
 /* 119hyd-Map2 · js/marker.js — 그룹 색상 · 마커 · 정보카드(팝업) 그리기 */
-AppFiles.reg('js/marker.js','v3.16.5'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
+AppFiles.reg('js/marker.js','v3.16.6'); // 파일 버전 표시 (tools/bump-version.py가 관리 — 손으로 고치지 않음)
 
 /* ══════════ Marker & List Render ══════════ */
 const _groupColorMap={};
@@ -182,8 +182,7 @@ function addMarker(idx,d){
     }
     ensurePopupRendered(idx);
     if(iwOpen)iwOpen.setMap(null);
-    if(activeMarkerEl)activeMarkerEl.classList.remove('active-mk');
-    el.classList.add('active-mk');activeMarkerEl=el;
+    markActive(idx); // 선택 표시 (노란 깜빡임 고리 + 맨 위, v3.16.6)
     _sharedTooltip.style.opacity='0';
     clearTimeout(_tipTimer); // 정보카드 열리면 툴팁 타이머 취소
     iw.setMap(kakaoMap);iwOpen=iw;
@@ -207,6 +206,18 @@ function addMarker(idx,d){
   overlays[idx]={overlay,iw,clMarker,labelOverlay,hidden:hideNow,popupRendered:false,open:openIw}; // open: 겹침 선택 창에서 이 카드 열기
 }
 // 팝업이 아직 한 번도 렌더링되지 않았으면 지금 렌더링하고 표시해둔다 (idempotent)
+/* ── 선택한 소화전 표시 (v3.16.6) ──
+   큰 지도: 노란 고리가 깜빡이며 퍼지고(css .active-mk) 다른 마커보다 위에 그림.
+   로드뷰 미니맵도 같은 소화전을 표시(_rvHySync가 _selIdx를 봄). -1이면 선택 없음. */
+let _selIdx=-1,_selOv=null;
+function markActive(idx){
+  if(activeMarkerEl)activeMarkerEl.classList.remove('active-mk');
+  if(_selOv){try{_selOv.setZIndex(10);}catch(e){}}
+  activeMarkerEl=null;_selOv=null;_selIdx=-1;
+  const o=idx>=0?overlays[idx]:null,el=o?.overlay?.getContent?.();
+  if(el){el.classList.add('active-mk');activeMarkerEl=el;_selOv=o.overlay;try{_selOv.setZIndex(50);}catch(e){}_selIdx=idx;}
+  if(typeof _rvHySync==='function'&&document.getElementById('rvPanel')?.style.display==='flex')_rvHySync();
+}
 function ensurePopupRendered(idx){
   const ov=overlays[idx];
   if(!ov||ov.popupRendered)return;
